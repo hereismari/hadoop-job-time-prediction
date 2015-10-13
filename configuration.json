@@ -1,0 +1,14 @@
+{
+    "project_name" : "",
+    "project_id" : "",
+    "cluster_template_id" : "",
+    "job_template_id" : ""
+    "net_id" : "",
+    "image_id" : "",
+    "main_ip" : "",
+    "exec_local_path": "",
+    "public_key_path" : "",
+    "private_keypair_path" : "",
+    "output_container_name" : ""
+
+}
