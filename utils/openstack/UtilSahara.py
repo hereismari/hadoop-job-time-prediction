@@ -30,14 +30,14 @@ class UtilSahara():
         return cluster
 
     #The template must exist already, wait time is ~ 20 min if not setted
-    def createClusterHadoop(self, name, image_id, template_id, net_id, wait_time=250, verify=True):
+    def createClusterHadoop(self, name, image_id, template_id, net_id, user_keypair, wait_time=250, verify=True):
 
         print 'Creating hadoop cluster...'
 
         p_n = 'vanilla'
         h_v = '2.6.0'
 
-        cluster = self.connection.clusters.create(name=name,plugin_name=p_n, hadoop_version=h_v, default_image_id = image_id, cluster_template_id=template_id, net_id=net_id, user_keypair_id='key-marianne')
+        cluster = self.connection.clusters.create(name=name,plugin_name=p_n, hadoop_version=h_v, default_image_id = image_id, cluster_template_id=template_id, net_id=net_id, user_keypair)
         print 'Cluster is being created: ' + cluster.id
 
         if verify: status = self.verifyCluster(cluster.id, wait_time)
@@ -99,11 +99,11 @@ class UtilSahara():
 
     #wait time is equal to ~ 2 hours if not setted
     def runStreamingJob(self, job_template_id, cluster_id, streaming_mapper, streaming_reducer,
-        input_ds_id, output_ds_id, wait_time=1500, verify=True, reduces='1'):
+        input_ds_id, output_ds_id, wait_time=1500, verify=True, reduces=1):
 
         job_configs = {
             'configs' : {
-            'mapred.reduce.tasks' : '0',
+            'mapred.reduce.tasks' : str(reduces),
             'edp.streaming.mapper': streaming_mapper,
             'edp.streaming.reducer': streaming_reducer },
             'args': [],
@@ -131,7 +131,7 @@ class UtilSahara():
         print 'Getting instances IPs...'
         for node_group in cluster.node_groups:
             for instance in node_group['instances']:
-                print instance['name'], instance['internal_ip']
+                print instance['internal_ip']
                 instances_ip.append(instance['internal_ip'])
                 print 'Success!'
         return instances_ip
