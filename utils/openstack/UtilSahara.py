@@ -25,9 +25,9 @@ class UtilSahara():
         print 'Deleting cluster: ' + cluster_id
         self.connection.clusters.delete(cluster_id)
 
-        if verify: status = self.verifyCluster(cluster_id, wait_time)
+        if verify: status = self.verifyClusterDeletion(cluster_id, wait_time)
         else: 'Check succes on Horizon :)'
-        return cluster
+        return cluster_id
 
     #The template must exist already, wait time is ~ 20 min if not setted
     def createClusterHadoop(self, name, image_id, template_id, net_id, user_keypair, wait_time=250, verify=True):
@@ -37,13 +37,13 @@ class UtilSahara():
         p_n = 'vanilla'
         h_v = '2.6.0'
 
-        cluster = self.connection.clusters.create(name=name,plugin_name=p_n, hadoop_version=h_v, default_image_id = image_id, cluster_template_id=template_id, net_id=net_id, user_keypair)
+        cluster = self.connection.clusters.create(name=name,plugin_name=p_n, hadoop_version=h_v, default_image_id = image_id, cluster_template_id=template_id, net_id=net_id, user_keypair_id=user_keypair)
         print 'Cluster is being created: ' + cluster.id
 
-        if verify: status = self.verifyCluster(cluster.id, wait_time)
+        if verify: status = self.verifyClusterCreation(cluster.id, wait_time)
         else: 'Check succes on Horizon :)'
 
-        return cluster
+        return cluster.id
 
     #wait time is equal to ~ 2 hours if not setted
     def runMapReduceJob(self, job_name, job_id, cluster_id, map_output_key, map_output_value,
@@ -136,20 +136,41 @@ class UtilSahara():
                 print 'Success!'
         return instances_ip
 
-    def verifyCluster(self, cluster_id, wait_time):
+    def verifyClusterCreation(self, cluster_id, wait_time):
         cont = 0
         while True:
             time.sleep(5)
             try:
                 status = self.connection.clusters.get(cluster_id).status
             except:
-                print "Cluster is dead or doesn't exists", 'id = ' + cluster_id
+                print "Cluster is dead or doesn't exist!", 'id = ' + cluster_id
             print status
-            if status in ['Active', 'Error']: break
+            if status == 'Active':
+                break
+            elif status == 'Error': 
+                raise RuntimeError("Cluster could not be created. Check configurations or cloud status.")
             cont += 1
             if cont >= wait_time:
                 print 'TIMEOUT!!!'
                 break
+
+    def verifyClusterDeletion(self, cluster_id, wait_time):
+         cont = 0
+         while True:
+             time.sleep(5)
+             try:
+                 status = self.connection.clusters.get(cluster_id).status
+             except:
+                 print "Cluster was successfully deleted!", 'id = ' + cluster_id
+                 break
+             print status
+             if status == 'Error':
+                 raise RuntimeError("Cluster could not be created. Check configurations or cloud status.")
+             cont += 1
+             if cont >= wait_time:
+                 print 'TIMEOUT!!!'
+                 break
+
 
     def verifyJob(self, job_id, wait_time):
         cont = 0
