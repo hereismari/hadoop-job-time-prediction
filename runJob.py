@@ -108,14 +108,15 @@ for cluster_template in json_parser.get('cluster_templates'):
 	
 	cluster_template_id = cluster_template['id']
 	cluster_size = cluster_template['n_slaves']
-
 	cluster_name = DEF_CLUSTER_NAME + '-' +  str(cluster_size)
+
 	######### CREATING CLUSTER #############
 	try:
 		cluster_id = sahara_util.createClusterHadoop(cluster_name, image_id, cluster_template_id, net_id, private_keypair_name)
 		#cluster_id = "182afd54-e621-438c-977d-a7a543325714"
 	except RuntimeError as err:
 		print err.args
+		break
 		
 	######### CONFIGURING CLUSTER ##########
 	instancesIps = sahara_util.get_instances_ips(cluster_id)
@@ -125,9 +126,9 @@ for cluster_template in json_parser.get('cluster_templates'):
 	######### CREATING DATASOURCES ##########
 	output_ds_id = createOutputDataSource(DEF_OUTPUT_CONTAINER_NAME,user,password)
 
+	######### RUNNING JOB ##########
 	for i in xrange(number_execs):
 		job_res = sahara_util.runStreamingJob(job_template_id, cluster_id, mapper_exec_cmd, reducer_exec_cmd, input_ds_id, output_ds_id)
-		######### GETTING JOB RESULT ##########
 		saveJobResult(job_res,cluster_size,output_file)
 	
 	######### DELETING CLUSTER ###########
