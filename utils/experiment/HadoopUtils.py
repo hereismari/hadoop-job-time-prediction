@@ -3,12 +3,12 @@ __author__ = 'tarciso'
 import subprocess
 import os
 import time
-from linuxUtils import LinuxUtils
+from LinuxUtils import LinuxUtils
 
 class HadoopUtils():
     @staticmethod
     def runHDFSCommand(args):
-        command = ["/usr/local/hadoop/bin/hdfs", "dfs"]
+        command = ["/opt/hadoop/bin/hdfs", "dfs"]
         command += args.split()
 
         print command
@@ -97,6 +97,10 @@ class HadoopUtils():
         return HadoopUtils.runHDFSCommand("-cat " + hdfsFilePath)
 
     @staticmethod
+    def createHDFSDir(dirPath):
+        HadoopUtils.runHDFSCommand("-mkdir -p " + dirPath)
+	
+    @staticmethod
     def rmPath(hdfsPath):
         return HadoopUtils.runHDFSCommand("-rm -r " + hdfsPath)
 
@@ -109,11 +113,17 @@ class HadoopUtils():
     def getmerge(hdfsPathPattern,localDestPath):
         HadoopUtils.runHDFSCommand("-getmerge " + hdfsPathPattern + " " + localDestPath)
 
-
+    @staticmethod
+    def putFileInHDFS(filePath, destPath="", blockSize=None):
+        if blockSize != None:
+            HadoopUtils.runHDFSCommand("-Ddfs.block.size=" + blockSize + " -put " + filePath + " " + destPath)
+        else:
+            HadoopUtils.runHDFSCommand("-put " + filePath + " " + destPath)
+			
 def main():
-    start = time.time()
-    end = time.time()
-    print "Time: ",end - start
+	#print HadoopUtils.runHDFSCommand('-ls')
+	HadoopUtils.createHDFSDir("teste")
+	HadoopUtils.putFileInHDFS("/home/hadoop/HadoopUtils.py", "teste")
 
 if __name__ == "__main__":
     main()

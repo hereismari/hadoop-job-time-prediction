@@ -10,5 +10,6 @@
 "public_keypair_path" : "",
 "private_keypair_path" : "",
 "output_container_name" : "",
-"private_keypair_name" : ""
+"private_keypair_name" : "",
+"input_file_path" : ""
 }
