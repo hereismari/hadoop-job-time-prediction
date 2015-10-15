@@ -43,7 +43,6 @@ class LinuxUtils():
         return LinuxUtils.runLinuxCommand(command)
 
 def main():
-    print LinuxUtils.catFile("/home/tarciso/Downloads/part-copy")[0][0]
 
 if __name__ == "__main__":
     main()

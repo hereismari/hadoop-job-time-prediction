@@ -112,10 +112,6 @@ class HadoopUtils():
 
 def main():
     start = time.time()
-    HadoopUtils.runHadoopStreamingJobSerially(input="/media/tarciso/38E6970DE696CA90/LVC/base_recife/binary-orb-features/",output="/tmp",
-          mapperCommand="/home/tarciso/hp-workspace/arbigdata2015/trunk/VocTreeMapReduce/ClustererMapper/Release/ClustererMapper " +
-            "/home/tarciso/hp-workspace/arbigdata2015/trunk/MapReduceClassifier/Clusterer/recife-dataset/centroids/centroids-128-1.json 1",
-            reducerCommand="/home/tarciso/hp-workspace/arbigdata2015/trunk/VocTreeMapReduce/ClustererReducer/Release/ClustererReducer")
     end = time.time()
     print "Time: ",end - start
 
