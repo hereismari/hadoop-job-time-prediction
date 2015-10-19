@@ -13,6 +13,7 @@ from subprocess import Popen, call, PIPE
 
 MIN_NUM_ARGS = 3
 DEF_EXEC_INSTANCE_PATH = "/home/hadoop"
+DEF_INPUT_DIR = "input"
 
 def printUsage():
 	print "python configureCluster.py <clusterId> <config_file_path>"
@@ -40,7 +41,8 @@ def putFileInHDFS(filePath, masterIp):
     copyFileToInstances(filePath, [masterIp])
     file_name = filePath.split('/')[-1]
     print file_name
-    commandArray = ["ssh hadoop@" + masterIp, "python", "-- <", "putFileInHDFS.py", DEF_EXEC_INSTANCE_PATH +'/' +  file_name, masterIp]
+    remoteFilePath = DEF_EXEC_INSTANCE_PATH + '/' +  file_name
+    commandArray = ["ssh hadoop@" + masterIp, "'cat | python -", remoteFilePath, DEF_INPUT_DIR + "'", "<", "./putFileInHDFS.py"]
     command = ' '.join(commandArray)
     print command
     call(command,shell=True)
