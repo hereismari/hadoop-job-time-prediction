@@ -1,2 +1,2 @@
-# sahara-scalability-exp
-Code used to perform some scalability experiments using OpenStack Sahara.
+# Hadoop Job Time Prediction
+Code used to perform some Hadoop job predictions experiments using OpenStack Sahara.
