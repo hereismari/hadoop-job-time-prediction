@@ -14,7 +14,7 @@ class ConnectionGetter(object):
         self.key = key
         self.project_name = project_name
         self.project_id = project_id
-        self.main_ip = main_ip
+	self.main_ip = main_ip
 
     ''' Was tested is working fine! '''
     def sahara(self, token_id):
@@ -40,16 +40,6 @@ class ConnectionGetter(object):
 
         print 'Connected to Keystone'
         return keystone_connection
-
-    def nova(self):
-
-        print 'Establishing connection to Nova...'
-
-        auth_url = 'http://%s:5000/v2.0' % self.main_ip
-        nova_connection = novaclient.Client(self.user, self.key, self.project_name, auth_url, service_type='compute')
-
-        print 'Connected to Nova'
-        return nova_connection
 
     def swiftExt(self):
         osOptions = dict()

@@ -4,6 +4,7 @@ from utils.openstack.UtilSahara import *
 from utils.openstack.UtilKeystone import *
 from utils.openstack.UtilNova import *
 from utils.experiment.JsonParser import *
+from utils.experiment.sendMail import sendMail
 
 import os
 import sys
@@ -12,15 +13,16 @@ import time
 import getpass
 from subprocess import Popen, call, PIPE
 
-MIN_NUM_ARGS = 9
-DEF_CLUSTER_NAME = "test-experiment-cluster"
-NUMBER_OF_BACKUP_EXECUTIONS = 0
+#--------------------- DEFAULT CONFIGURATIONS -------------------
+
+MIN_NUM_ARGS = 3
+DEF_CLUSTER_NAME = "hadoop-job-time-prediction-"
 HDFS_BASE_DIR = "/user/hadoop/"
 HOME_INSTANCE_DIR = "/home/hadoop"
-DEF_OUTPUT_CONTAINER_NAME = "output"
 DEF_INPUT_DIR = "input"
-DEF_INPUT_SIZE = 28672
-DEF_JOB_NAME = "tarciso-experiment-job-"
+DEF_INPUT_SIZE_MB = 5059
+
+#-------------------- FUNCTIONS ----------------------------------
 
 def configureInstances(instancesIps, publicKeyPairPath, privateKeyPairPath):
 	print "Configuring Instances..."
@@ -41,7 +43,7 @@ def copyFileToInstances(filePath,instancesIps,keypairPath):
         print "Copied file to instance with IP:", instanceIp
 
 def putFileInHDFS(filePath, masterIp,keypairPath):
-    nova_util.attach_volume(server_id, volume_id)
+    connection['nova'].attach_volume(server_id, volume_id)
     time.sleep(2)
     file_name = filePath.split('/')[-1]
     print file_name
@@ -50,7 +52,7 @@ def putFileInHDFS(filePath, masterIp,keypairPath):
     command = ' '.join(commandArray)
     print command
     call(command,shell=True)
-    nova_util.detache_volume(server_id, volume_id)
+    connection['nova'].detache_volume(server_id, volume_id)
 
     print "Success! File is now at HDFS of cluster!"
 
@@ -58,7 +60,7 @@ def createOutputSwiftDataSource(container_out_name,user,password):
 	exec_date = datetime.now().strftime('%Y%m%d_%H%M%S')
 	output_ds_name ="output_%s_exp_%s" % (user, exec_date)
 	container_out_url = "swift://%s.sahara/%s" % (container_out_name, output_ds_name)
-	data_source_out = sahara_util.createDataSource(output_ds_name,
+	data_source_out = connection['sahara'].createDataSource(output_ds_name,
 	    container_out_url,
 	    "swift",
 	    container_out_name,
@@ -69,41 +71,59 @@ def createOutputSwiftDataSource(container_out_name,user,password):
 
 def createHDFSDataSource(name,path):
 	print "Creating Data Source in HDFS with name = " + name + " and path = " + path
-	return sahara_util.createDataSource(name,
-				path,
-				"hdfs").id
+	return connection['sahara'].createDataSource(name, path, "hdfs").id
 
+def deleteHDFSFolder(keypairPath, masterIp):
+	commandArray = ["ssh -i",keypairPath,"hadoop@" + masterIp, "'cat | python - '", "<", "./removeOutputFile.py"]
+	command = ' '.join(commandArray)
+	print command
+	call(command,shell=True)
 
-def saveJobResult(job_res,cluster_size,master_ip,num_reduces,job_num,output_file):
-	print job_res
-	job_name = DEF_JOB_NAME + str(job_num)
-	result = ";".join((job_name,job_res['id'], str(num_reduces), str(DEF_INPUT_SIZE), str(cluster_size), str(job_res['time']), job_res['status'])) + "\n"
+def saveJobResult(job_res, job_name, cluster_size, master_ip, num_reduces, job_num, output_file):
+	result = ";".join((job_name, str(num_reduces), str(DEF_INPUT_SIZE_MB), str(cluster_size), str(job_res['time']), job_res['status'])) + "\n"
 	print result
 	print "Finished"
 	f = open(output_file, 'ab')
 	f.write(result)
 	f.close()
 
+def getConnection(user, password, project_name, project_id, main_ip):
+
+    result = {}
+
+    connector = ConnectionGetter(user, password, project_name, project_id, main_ip)
+
+    keystone = UtilKeystone(connector.keystone())
+    token_ref_id = keystone.getTokenRef(user, password, project_name).id
+
+    sahara = UtilSahara(connector.sahara(token_ref_id))
+
+    nova = UtilNova(connector.nova())
+
+    result['keystone'] = keystone
+    result['sahara'] = sahara
+    result['nova'] = nova
+
+    return result
+
 def printUsage():
-	print "python runJob.py <numberExecs> <jobTemplateId> <inputDataSourceId> <mapperExecCmd> <reducerExecCmd> <numReduceTasks> <configFilePath> <outputFile>"
+	print "python runExperiment.py <numberExecs> <configFilePath> <outputFile>"
 
 if (len(sys.argv) < MIN_NUM_ARGS):
-	print "Wrong number of arguments: ", len(sys.argv)
-	printUsage()
-	exit(1)
+        print "Wrong number of arguments: ", len(sys.argv)
+        printUsage()
+        exit(1)
 
 #------------ CONFIGURATIONS -----------------
 number_execs = int(sys.argv[1])
-job_template_id = sys.argv[2]
-input_ds_id = sys.argv[3]
-mapper_exec_cmd = sys.argv[4]
-reducer_exec_cmd = sys.argv[5]
-mapred_reduce_tasks = sys.argv[6]
-config_file_path = sys.argv[7]
-output_file = sys.argv[8]
+config_file_path = sys.argv[2]
+output_file = sys.argv[3]
 
 user = raw_input('OpenStack User: ')
 password = getpass.getpass(prompt='OpenStack Password: ')
+
+gmail_user = raw_input('Gmail User(without @gmail.com): ')
+gmail_password = getpass.getpass(prompt='Gmail Password: ')
 
 json_parser = JsonParser(config_file_path)
 
@@ -112,9 +132,6 @@ main_ip = json_parser.get('main_ip')
 project_name = json_parser.get('project_name')
 project_id = json_parser.get('project_id')
 
-output_container_name = json_parser.get('output_container_name')
-
-exec_local_path = json_parser.get('exec_local_path')
 public_keypair_path = json_parser.get('public_keypair_path')
 private_keypair_path = json_parser.get('private_keypair_path')
 private_keypair_name = json_parser.get('private_keypair_name')
@@ -124,13 +141,10 @@ net_id = json_parser.get('net_id')
 image_id = json_parser.get('image_id')
 volume_id = json_parser.get('volume_id')
 
-#------------ GETTING CONNECTION WITH OPENSTACK -----------------
-connector = ConnectionGetter(user, password, project_name, project_id, main_ip)
+mapred_factors = json_parser.get('mapred_factor')
 
-keystone_util = UtilKeystone(connector.keystone())
-token_ref_id = keystone_util.getTokenRef(user, password, project_name).id
-sahara_util = UtilSahara(connector.sahara(token_ref_id))
-nova_util = UtilNova(connector.nova())
+#------------ GETTING CONNECTION WITH OPENSTACK -----------------
+connection = getConnection(user, password, project_name, project_id, main_ip)
 
 #----------------------- EXECUTING EXPERIMENT ------------------------------
 job_number = 0
@@ -141,39 +155,56 @@ for cluster_template in json_parser.get('cluster_templates'):
 	cluster_name = DEF_CLUSTER_NAME + '-' +  str(cluster_size)
 
 	print 'Running experiment for cluster with number of workers =', cluster_size
-
 	######### CREATING CLUSTER #############
 	try:
-	    cluster_id = sahara_util.createClusterHadoop(cluster_name, image_id, cluster_template_id, net_id, private_keypair_name)
+	    cluster_id = connection['sahara'].createClusterHadoop(cluster_name, image_id, cluster_template_id, net_id, private_keypair_name)
 	except RuntimeError as err:
 		print err.args
 		break
 		
 	######### CONFIGURING CLUSTER ##########
-	instancesIps = sahara_util.get_instances_ips(cluster_id)
+	instancesIps = connection['sahara'].get_instances_ips(cluster_id)
 	configureInstances(instancesIps, public_keypair_path, private_keypair_path)
-	copyFileToInstances(exec_local_path, instancesIps, private_keypair_path)
-	master_ip = sahara_util.get_master_ip(cluster_id)
-	server_id = sahara_util.get_master_id(cluster_id)
+	master_ip = connection['sahara'].get_master_ip(cluster_id)
+	server_id = connection['sahara'].get_master_id(cluster_id)
 	putFileInHDFS(input_file_path, master_ip, private_keypair_path)
 
-	######### CREATING DATASOURCES ##########
-	exec_date = datetime.now().strftime('%Y%m%d_%H%M%S')
-	output_hdfs_name ="output_%s_exp_%s" % (user, exec_date) 
-	output_ds_id = createHDFSDataSource(output_hdfs_name,HDFS_BASE_DIR + "/" + output_hdfs_name)
-
-	######### RUNNING JOB ##########
-	numFailedJobs = 0
-	numSucceededJobs = 0
-	while numSucceededJobs < number_execs:
-		job_res = sahara_util.runStreamingJob(job_template_id, cluster_id, mapper_exec_cmd, reducer_exec_cmd, input_ds_id=input_ds_id, output_ds_id=output_ds_id)
-		saveJobResult(job_res,cluster_size,master_ip,mapred_reduce_tasks,job_number,output_file)
-		if (job_res['status'] != 'SUCCEEDED'):
-			numFailedJobs += 1
-		else:
-			numSucceedJobs += 1
+	for mapred_factor in mapred_factors:
 		
-	sahara_util.deleteCluster(cluster_id)
+		mapred_reduce_tasks = str(int(round(2*(mapred_factor)*10)))
+
+		for job in json_parser.get('jobs'):
+			######### RUNNING JOB ##########
+			numFailedJobs = 0
+			numSucceededJobs = 0
+			while numSucceededJobs < number_execs:
+				try:
+					######### CREATING DATASOURCES ##########
+					exec_date = datetime.now().strftime('%Y%m%d_%H%M%S')
+					output_hdfs_name ="output_%s_exp_%s" % (user, exec_date)
+					output_ds_id = createHDFSDataSource(output_hdfs_name,HDFS_BASE_DIR + "/" + output_hdfs_name)
+					
+					if job['name'] != 'PiEstimator':
+						job_res = connection['sahara'].runJavaActionJob(main_class=job['main_class'], job_id=job['template_id'], cluster_id=cluster_id, input_ds_id=job['input_ds_id'], output_ds_id=output_ds_id, reduces=mapred_reduce_tasks, args=job['args'])
+					else:
+						job_res = connection['sahara'].runJavaActionJob(main_class=job['main_class'], job_id=job['template_id'], cluster_id=cluster_id, args=job['args'])
+				
+					saveJobResult(job_res, job['name'], cluster_size, master_ip, mapred_reduce_tasks, job_number, output_file)
+					if (job_res['status'] != 'SUCCEEDED'):
+						numFailedJobs += 1
+					else:
+						numSucceededJobs += 1
+					
+					deleteHDFSFolder(private_keypair_path,master_ip)
+					print "Break time... go take a coffee and relax!"
+					time.sleep(5)
+			
+				except Exception, e:
+					print "Exception: ", e
+					connection = getConnection(user, password, project_name, project_id, main_ip)
+					deleteHDFSFolder(private_keypair_path,master_ip)
 	
+			sendMail('Finished job %s\nsucces_jobs:%s failed_jobs:%s reduce fator %s' % (job['name'], numSucceededJobs, numFailedJobs, str(mapred_factor)) , gmail_user + '@gmail.com', gmail_user + '@gmail.com', gmail_password, cluster_size, output_file)
+	connection['sahara'].deleteCluster(cluster_id)
 	print 'FINISHED FOR CLUSTER ' + cluster_name
-#	sentMail()
+	sendMail('Success!', gmail_user + '@gmail.com', gmail_user + '@gmail.com', gmail_password, cluster_size, output_file)

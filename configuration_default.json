@@ -1,0 +1,42 @@
+{
+    "project_name" : "",
+    "project_id" : "",
+    "cluster_templates" : [
+        {"n_slaves" : 3, "id" : ""},
+        {"n_slaves" : 4, "id" : ""},
+        {"n_slaves" : 5, "id" : ""},
+        {"n_slaves" : 6, "id" : ""},
+        {"n_slaves" : 7, "id" : ""},
+        {"n_slaves" : 9, "id" : ""},
+        {"n_slaves" : 10, "id" : ""}
+    ],
+    "net_id" : "",
+    "image_id" : "",
+    "main_ip" : "",
+    "public_keypair_path" : "",
+    "private_keypair_path" : "",
+    "private_keypair_name" : "",
+    "input_file_path" : "5GB",
+	"volume_id" : "",
+	"mapred_factor" : [0.95, 1.75],
+    "jobs" : [
+            {
+                "name" : "Pi_Estimator",
+                "main_class" : "org.apache.hadoop.examples.PiEstimator",
+                "input_ds_id" : None,
+                "template_id": ""
+            },
+            {
+                "name" : "WordCount",
+                "main_class" : "org.myorg.WordCount",
+                "input_ds_id" : "",
+                "template_id": ""
+            },
+            {
+                "name" : "TeraSort",
+                "main_class" : "org.apache.hadoop.examples.terasort.TeraSort",
+                "input_ds_id" : "",
+                "template_id": ""
+            }
+    ]
+}
