@@ -79,8 +79,8 @@ def deleteHDFSFolder(keypairPath, masterIp):
 	print command
 	call(command,shell=True)
 
-def saveJobResult(job_res, job_name, cluster_size, master_ip, num_reduces, job_num, output_file):
-	result = ";".join((job_name, str(num_reduces), str(DEF_INPUT_SIZE_MB), str(cluster_size), str(job_res['time']), job_res['status'])) + "\n"
+def saveJobResult(job_res, job_name, cluster_size, master_ip, num_reduces, job_num, output_file, input_size):
+	result = ";".join((job_name, str(num_reduces), str(input_size), str(cluster_size), str(job_res['time']), job_res['status'])) + "\n"
 	print result
 	print "Finished"
 	f = open(output_file, 'ab')
@@ -171,7 +171,7 @@ for cluster_template in json_parser.get('cluster_templates'):
 
 	for mapred_factor in mapred_factors:
 		
-		mapred_reduce_tasks = str(int(round(2*(mapred_factor)*10)))
+		mapred_reduce_tasks = str(int(round(2*(mapred_factor)*cluster_size))) # 2 == mapred.tascktracker.reduce.maximum default value
 
 		for job in json_parser.get('jobs'):
 			######### RUNNING JOB ##########
@@ -183,13 +183,17 @@ for cluster_template in json_parser.get('cluster_templates'):
 					exec_date = datetime.now().strftime('%Y%m%d_%H%M%S')
 					output_hdfs_name ="output_%s_exp_%s" % (user, exec_date)
 					output_ds_id = createHDFSDataSource(output_hdfs_name,HDFS_BASE_DIR + "/" + output_hdfs_name)
-					
-					if job['name'] != 'PiEstimator':
-						job_res = connection['sahara'].runJavaActionJob(main_class=job['main_class'], job_id=job['template_id'], cluster_id=cluster_id, input_ds_id=job['input_ds_id'], output_ds_id=output_ds_id, reduces=mapred_reduce_tasks, args=job['args'])
+				        
+					input_size = DEF_INPUT_SIZE_MB
+					num_reduces = mapred_reduce_tasks
+
+					if job['name'] != 'Pi Estimator':
+						job_res = connection['sahara'].runJavaActionJob(main_class=job['main_class'], job_id=job['template_id'], cluster_id=cluster_id, input_ds_id=job['input_ds_id'], output_ds_id=output_ds_id, reduces=num_reduces, args=job['args'])
 					else:
-						job_res = connection['sahara'].runJavaActionJob(main_class=job['main_class'], job_id=job['template_id'], cluster_id=cluster_id, args=job['args'])
+						input_size = job['args'][0]
+						job_res = connection['sahara'].runJavaActionJob(main_class=job['main_class'], job_id=job['template_id'], cluster_id=cluster_id, reduces=num_reduces, args=job['args'])
 				
-					saveJobResult(job_res, job['name'], cluster_size, master_ip, mapred_reduce_tasks, job_number, output_file)
+					saveJobResult(job_res, job['name'], cluster_size, master_ip, num_reduces, job_number, output_file, input_size)
 					if (job_res['status'] != 'SUCCEEDED'):
 						numFailedJobs += 1
 					else:
