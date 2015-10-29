@@ -145,10 +145,10 @@ print 'Running experiment for cluster with number of workers =', cluster_size
 ######### CREATING CLUSTER #############
 try:
     cluster_id = connection['sahara'].createClusterHadoop(cluster_name, image_id, cluster_template_id, net_id, private_keypair_name)
+	#cluster_id = "54f7ce2d-017f-4299-a34c-70568cfc0b7a"
 except RuntimeError as err:
         print err.args
-        break
-        
+     
 ######### CONFIGURING CLUSTER ##########
 instancesIps = connection['sahara'].get_instances_ips(cluster_id)
 configureInstances(instancesIps, public_keypair_path, private_keypair_path)
@@ -156,15 +156,16 @@ master_ip = connection['sahara'].get_master_ip(cluster_id)
 server_id = connection['sahara'].get_master_id(cluster_id)
 putFileInHDFS(input_file_path, master_ip, private_keypair_path)
 
+flag_terasort = True #TeraSort must run only one time
+
 for mapred_factor in mapred_factors:
 
         mapred_reduce_tasks = str(int(round(2*(mapred_factor)*cluster_size))) # 2 == mapred.tascktracker.reduce.maximum default value
-        flag = True
-
+ 
         for job in json_parser.get('jobs'):
 
-                if job['name'] == 'TeraSort' and flag:
-                    flag = False
+                if job['name'] == 'TeraSort' and flag_terasort:
+                    flag_terasort = False
                     continue
 
                 ######### RUNNING JOB ##########
@@ -198,6 +199,6 @@ for mapred_factor in mapred_factors:
                                 connection = getConnection(user, password, project_name, project_id, main_ip)
                                 deleteHDFSFolder(private_keypair_path,master_ip)
 
-connection['sahara'].deleteCluster(cluster_id)
 print 'FINISHED FOR CLUSTER ' + cluster_name
+print 'PLEASE DELETE CLUSTER IF YOU RE NOT GONNA USE IT ANYMORE :D'
 sendMail('Success!', gmail_user + '@gmail.com', gmail_user + '@gmail.com', gmail_password, cluster_size, output_file)

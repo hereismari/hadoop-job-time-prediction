@@ -152,14 +152,16 @@ for cluster_template in json_parser.get('cluster_templates'):
 	server_id = connection['sahara'].get_master_id(cluster_id)
 	putFileInHDFS(input_file_path, master_ip, private_keypair_path)
 
+	flag_terasort = True #TeraSort must run only one time
+
 	for mapred_factor in mapred_factors:
 		
 		mapred_reduce_tasks = str(int(round(2*(mapred_factor)*cluster_size))) # 2 == mapred.tascktracker.reduce.maximum default value
 
 		for job in json_parser.get('jobs'):
 
-			if job['name'] == 'TeraSort' and flag:
-                    flag = False
+			 if job['name'] == 'TeraSort' and flag_terasort:
+                    flag_terasort = False
                     continue
 
 			######### RUNNING JOB ##########
