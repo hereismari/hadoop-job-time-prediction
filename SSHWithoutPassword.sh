@@ -12,4 +12,6 @@ publicKeyPairPath=$2
 keypairPath=$3
 
 publicKeyTxt="\"""$(cat "$publicKeyPairPath")""\""
+ssh-keygen -R $instanceIP
 ssh -o StrictHostKeyChecking=no -i $keypairPath ubuntu@$instanceIP "bash -s" -- < ./configure_hadoop_user.sh $publicKeyTxt
+
