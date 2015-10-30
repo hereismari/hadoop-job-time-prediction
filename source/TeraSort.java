@@ -268,7 +268,7 @@ public class TeraSort extends Configured implements Tool {
   public static void main(String[] args) throws Exception {
 	JobConf jobConf = new JobConf();
 	//MY CHANGES IN ORDER TO OOZIE CONFIGURATIONS WORK
-	//jobConf.addResource(new Path("file:///", System.getProperty("oozie.action.conf.xml")));
+	jobConf.addResource(new Path("file:///", System.getProperty("oozie.action.conf.xml")));
 	//END
     int res = ToolRunner.run(jobConf, new TeraSort(), args);
     System.exit(res);
