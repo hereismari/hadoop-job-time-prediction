@@ -51,9 +51,9 @@ If you have any doubts about topics 2 and 3 you can have more information about 
 ### 3. Put what is need in Sahara
 
   1. Create a key_pair, if you already have one you can use it (The local path of your public and private key will be needed) 
-  2. You'll have to put the jar as a job binary in Sahara and create a job template of type JavaAction for each job(PiEstimator, TeraSort and WordCount). You can have acces to a similar proccess [here]().
+  2. You'll have to put the jar as a job binary in Sahara and create a job template of type JavaAction for each job(PiEstimator, TeraSort and WordCount). You can have acces to a similar proccess [here](https://docs.google.com/presentation/d/12X1dvb8tbSPfE1gdIqzU3X8ImdrnLtp_n1D9tK9H8NI/edit?usp=sharing).
   2. You'll have to create a master and woker node group template, and a cluster template with(3,4,5,...10) nodes.
-      A similar proccess can be seen [here]().
+      A similar proccess can be seen [here](https://docs.google.com/presentation/d/1VYBbipv8cgMvRWc7oFYSIMWLSkEPBO08_HJ1aMdeeOI/edit?usp=sharing).
   3. create a volume and put the 5GB file in it. You can contact me if you need help in this proccess, I plan to do some post about it, and when I do I'll put in here!
 
 ### 4. Change json configuration file
