@@ -26,9 +26,9 @@ If you want to generate the file yourself, you must:
 - In case of doubts: more information about TeraSortGen [here](http://www.michael-noll.com/blog/2011/04/09/benchmarking-and-stress-testing-an-hadoop-cluster-with-terasort-testdfsio-nnbench-mrbench/)
 
  
-#### 2. Compile classes and generate JAR file
+#### 2. Compile the classes and generate JAR file
 
-To compile classes you should:
+To compile the classes you should:
   1. have hadoop 2.6.0 installed, you can have information of how to it [here](https://hadoop.apache.org/docs/r2.6.0/hadoop-project-dist/hadoop-common/SingleCluster.html)
   2. Download the source folder, and put it in the same directory hadoop is installed(you can put the source folder somewhere else, but it makes it easier if everything is in the same place, and you can delete it when you're done if you don't want this in the hadoop folder)
   2. Once you got the source folder(and is in the same folder of hadoop), compile the classes with thess commands:
