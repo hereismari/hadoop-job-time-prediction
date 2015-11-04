@@ -23,7 +23,7 @@
             {
                 "name" : "Pi_Estimator",
                 "main_class" : "org.apache.hadoop.examples.PiEstimator",
-                "input_ds_id" : None,
+                "input_ds_id" : null,
                 "template_id": ""
             },
             {
