@@ -50,7 +50,7 @@ If you have any doubts about topics 2 and 3 you can have more information about 
 
 ### 3. Put what is need in Sahara
 
-  1. Create a key_pair, if you already has one you can use it (The local path of your key will be needed) 
+  1. Create a key_pair, if you already have one you can use it (The local path of your public and private key will be needed) 
   2. You'll have to put the jar as a job binary in Sahara and create a job template of type JavaAction for each job(PiEstimator, TeraSort and WordCount). You can have acces to a similar proccess [here]().
   2. You'll have to create a master and woker node group template, and a cluster template with(3,4,5,...10) nodes.
       A similar proccess can be seen [here]().
@@ -61,7 +61,7 @@ If you have any doubts about topics 2 and 3 you can have more information about 
 
 ### 5. Run, baby, run!
 
-  Now should all be alright! Just run it!
+  Now should all be ready to run :heart:!
   You can run this experiment in 2 different ways:
   - Running 
     ```$python runExperiment.py  <number of executions> <configuration path> <output file name>```
