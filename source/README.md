@@ -12,6 +12,8 @@ The original code is property of Apache and it was modified in order to run trou
   conf.addResource(new Path("file:///", System.getProperty("oozie.action.conf.xml")));
   ```
 
+**PS : In the original experiment other confidentials job, that aren't available here were also executed**
+
 ## Generating the jar
 
 To generate the jar file you must:
