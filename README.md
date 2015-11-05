@@ -2,6 +2,14 @@
 
 Code used to perform some Hadoop job predictions experiments using OpenStack Sahara.
 
+###### Cluster size details
+
+The master and slaves of the clusters had a flavor with the following configurations:
+  - 2 VCPUs
+  - 45 GB HD
+  - 4 GB RAM
+  - 4 GB swap
+
 ## Running experiment
 
 To run this experiment first you must:
