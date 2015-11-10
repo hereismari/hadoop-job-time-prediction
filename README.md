@@ -18,6 +18,7 @@ To run this experiment first you must:
   3. Put what is need in Sahara
   4. Make a Json configuration file with the same structure of "configuration_default.json"
   5. Let this awesome experiment running and go have some good time, it will email you when it's done ;)
+  6. Generate graphs for a more visual result
 
 #### 1. Getting the input file
 
@@ -78,6 +79,10 @@ If you have any doubts about topics 2 and 3 you can have more information about 
     ```$python runExperimentIndividuall.py <number of executions> <number of cluster nodes> <configuration path>     <output file name>```
     *With number of executions = 8 and number of cluster = [3,10]*
 
+### 6. Generate graphs
+
+  Now that you have the ouput files, the final step is generate the graphs.
+  If you used runExperimentIndividually.py you must concatenate all files in one, you can do that by:
+  ``` $ cat <output_1_node> <output_2_nodes> <output_3_nodes> ... > output_exp ```
   
-  
-  
+  Then, put the path to the file generated in the R script, and done!
