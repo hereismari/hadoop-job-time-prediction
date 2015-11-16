@@ -66,7 +66,7 @@ If you have any doubts about topics 2 and 3 you can have more information about 
   3. create a volume and put the 5GB file in it. You can contact me if you need help in this proccess, I plan to do some post about it, and when I do I'll put in here!
 
 ### 4. Change json configuration file
-  You can get all these informations trough Horizon, except: public_keypair_path, private_keypair_pathand private_keypair_name that only you have access.
+  You can get all these informations trough Horizon, except: public_keypair_path, private_keypair_path and private_keypair_name that only you have access.
 
 ### 5. Run, baby, run!
 
