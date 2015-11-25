@@ -21,4 +21,4 @@ To generate the jar file you must:
 1. Compile the classes
 2. Generate the jar
 
-You can get help in this tasks with this [link](https://github.com/openstack/sahara/tree/master/etc/edp-examples/edp-java) :).
+You can get help in these tasks with this [link](https://github.com/openstack/sahara/tree/master/etc/edp-examples/edp-java) :).
