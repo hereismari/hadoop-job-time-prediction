@@ -20,7 +20,8 @@ DEF_CLUSTER_NAME = "exp-hadoop-"
 HDFS_BASE_DIR = "/user/hadoop/"
 HOME_INSTANCE_DIR = "/home/hadoop"
 DEF_INPUT_DIR = "input"
-DEF_INPUT_SIZE_MB = 5059
+DEF_INPUT_SIZE_MB = 5000
+DEF_MAPRED_TASKTRACKER_REDUCE_MAX = 2
 
 #-------------------- FUNCTIONS ----------------------------------
 
@@ -97,7 +98,7 @@ if (len(sys.argv) < MIN_NUM_ARGS):
         printUsage()
         exit(1)
 
-#------------ CONFIGURATIONS -----------------
+#--------------------------------- CONFIGURATIONS --------------------------------------
 number_execs = int(sys.argv[1])
 cluster_size = int(sys.argv[2])
 config_file_path = sys.argv[3]
@@ -127,10 +128,12 @@ volume_id = json_parser.get('volume_id')
 
 mapred_factors = json_parser.get('mapred_factor')
 
-#------------ GETTING CONNECTION WITH OPENSTACK -----------------
+#------------------------------ GETTING CONNECTION WITH OPENSTACK ------------------------
+
 connection = getConnection(user, password, project_name, project_id, main_ip)
 
-#----------------------- EXECUTING EXPERIMENT ------------------------------
+#------------------------------ EXECUTING EXPERIMENT --------------------------------------------
+
 job_number = 0
 for cluster in json_parser.get('cluster_templates'):
         if cluster['n_slaves'] == cluster_size:
@@ -145,10 +148,9 @@ print 'Running experiment for cluster with number of workers =', cluster_size
 ######### CREATING CLUSTER #############
 try:
     cluster_id = connection['sahara'].createClusterHadoop(cluster_name, image_id, cluster_template_id, net_id, private_keypair_name)
-	#cluster_id = "54f7ce2d-017f-4299-a34c-70568cfc0b7a"
 except RuntimeError as err:
-        print err.args
-     
+    print err.args
+
 ######### CONFIGURING CLUSTER ##########
 instancesIps = connection['sahara'].get_instances_ips(cluster_id)
 configureInstances(instancesIps, public_keypair_path, private_keypair_path)
@@ -156,16 +158,16 @@ master_ip = connection['sahara'].get_master_ip(cluster_id)
 server_id = connection['sahara'].get_master_id(cluster_id)
 putFileInHDFS(input_file_path, master_ip, private_keypair_path)
 
-flag_terasort = True #TeraSort must run only one time
+flag_pi = True #PI doesn't have reduces so it will be executed only once
 
 for mapred_factor in mapred_factors:
 
-        mapred_reduce_tasks = str(int(round(2*(mapred_factor)*cluster_size))) # 2 == mapred.tascktracker.reduce.maximum default value
- 
+        mapred_reduce_tasks = str(int(round(DEF_MAPRED_TASKTRACKER_REDUCE_MAX*(mapred_factor)*cluster_size)))
+
         for job in json_parser.get('jobs'):
 
-                if job['name'] == 'TeraSort' and flag_terasort:
-                    flag_terasort = False
+                if job['name'] == 'Pi Estimator' and flag_pi:
+                    flag_pi = False
                     continue
 
                 ######### RUNNING JOB ##########
@@ -173,22 +175,21 @@ for mapred_factor in mapred_factors:
                 numSucceededJobs = 0
                 while numSucceededJobs < number_execs:
                         try:    
+                                connection = getConnection(user, password, project_name, project_id, main_ip)
+                               
                                 input_size = DEF_INPUT_SIZE_MB
                                 num_reduces = mapred_reduce_tasks
 
-                                if job['name'] == 'TeraSort':
+                                if job['name'] in ['Pi Estimator']:
                                         num_reduces = '1'
+                                        input_size = job['args'][0]
 
                                 job_res = connection['sahara'].runJavaActionJob(main_class=job['main_class'], job_id=job['template_id'], cluster_id=cluster_id, reduces=num_reduces, args=job['args'])
-                        
-                                if job['name'] == 'Pi Estimator':
-                                        input_size = job['args'][0]
-                                
+            
                                 saveJobResult(job_res, job['name'], cluster_size, master_ip, num_reduces, job_number, output_file, input_size)
-                                if (job_res['status'] != 'SUCCEEDED'):
-                                        numFailedJobs += 1
-                                else:
-                                        numSucceededJobs += 1
+                                
+                                if (job_res['status'] != 'SUCCEEDED'): numFailedJobs += 1
+                                else: numSucceededJobs += 1
                                 
                                 deleteHDFSFolder(private_keypair_path,master_ip)
                                 print "Break time... go take a coffee and relax!"

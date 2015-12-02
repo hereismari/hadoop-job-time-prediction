@@ -21,6 +21,7 @@ HDFS_BASE_DIR = "/user/hadoop/"
 HOME_INSTANCE_DIR = "/home/hadoop"
 DEF_INPUT_DIR = "input"
 DEF_INPUT_SIZE_MB = 5059
+DEF_MAPRED_TASKTRACKER_REDUCE_MAX = 2
 
 #-------------------- FUNCTIONS ----------------------------------
 
@@ -152,16 +153,16 @@ for cluster_template in json_parser.get('cluster_templates'):
 	server_id = connection['sahara'].get_master_id(cluster_id)
 	putFileInHDFS(input_file_path, master_ip, private_keypair_path)
 
-	flag_terasort = True #TeraSort must run only one time
+	flag_pi = True
 
 	for mapred_factor in mapred_factors:
 		
-		mapred_reduce_tasks = str(int(round(2*(mapred_factor)*cluster_size))) # 2 == mapred.tascktracker.reduce.maximum default value
+		mapred_reduce_tasks = str(int(round(DEF_MAPRED_TASKTRACKER_REDUCE_MAX*(mapred_factor)*cluster_size)))
 
 		for job in json_parser.get('jobs'):
 
-			 if job['name'] == 'TeraSort' and flag_terasort:
-                    flag_terasort = False
+			 if job['name'] == 'Pi Estimator' and flag_pi:
+               		flag_pi = False
                     continue
 
 			######### RUNNING JOB ##########
@@ -172,13 +173,11 @@ for cluster_template in json_parser.get('cluster_templates'):
 					input_size = DEF_INPUT_SIZE_MB
 					num_reduces = mapred_reduce_tasks
 
-					if job['name'] == 'TeraSort':
-						num_reduces = '1'
+					if job['name'] in ['Pi Estimator']:
+                   		num_reduces = '1'
+                        input_size = job['args'][0]
 
 					job_res = connection['sahara'].runJavaActionJob(main_class=job['main_class'], job_id=job['template_id'], cluster_id=cluster_id, reduces=num_reduces, args=job['args'])
-				
-					if job['name'] == 'Pi Estimator':
-						input_size = job['args'][0]
 					
 					saveJobResult(job_res, job['name'], cluster_size, master_ip, num_reduces, job_number, output_file, input_size)
 					if (job_res['status'] != 'SUCCEEDED'):

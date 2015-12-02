@@ -6,7 +6,7 @@ import sys
 MIN_NUM_ARGS = 3
 DEF_HADOOP_USER_PASSWD = "hadoop123"
 MOUNT_FOLDER_PATH = "/mnt/database"
-DEF_DEVICE_PATH = "/dev/vdb"
+DEF_DEVICE_PATH = "/dev/vdc"
 
 def printUsage():
     print "python PutFileInHDFS.py <filePathInVolume> <dirName>"

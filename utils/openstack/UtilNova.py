@@ -23,6 +23,7 @@ class UtilNova():
         while (not attached):
             time.sleep(0.5)
             attached = self.is_volume_attached(volume_id, server_id)
+        time.sleep(10) #making sure its attached...
         print 'Success!'
 
     def detache_volume(self, server_id, volume_id):
@@ -34,6 +35,7 @@ class UtilNova():
             time.sleep(0.5)
             attached = self.is_volume_attached(volume_id, server_id)
 
+        time.sleep(10) #making sure its detached...
         time.sleep(DEF_WAITING_TIME)
         print 'Success!'
 

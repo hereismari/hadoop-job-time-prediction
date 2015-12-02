@@ -192,7 +192,7 @@ class UtilSahara():
                  break
 
     def getClusterInfo(self, cluster_id):
-        print self.connection.clusters.get(cluster_id)
+		print self.connection.clusters.get(cluster_id)
 
     def verifyJob(self, job_id, wait_time):
         cont = 0
