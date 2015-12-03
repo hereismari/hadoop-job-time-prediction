@@ -9,9 +9,9 @@ plot_dir = "plots/"
 setwd("~/Dropbox/hadoop-job-time-prediction")
 
 job_information <- read.csv(file_name, 
-                                  header = F,
-                                  col.names = c("name", "reduces", "input_size", "nodes", "time", "id", "prediction_time"),
-                                  sep=";")
+                            header = F,
+                            col.names = c("name", "reduces", "input_size", "nodes", "time", "id", "prediction_time"),
+                            sep=";")
 
 # Setting up global value_times
 input_sizes   <- unique(job_information$input_size)
@@ -36,11 +36,11 @@ for (node in nodes) {
         categories <- length(data[data$nodes == node & 
                                     data$name == job & 
                                     data$reduces == reduce &
-                                    data$value_time == value_time,]$id)
+                                    data$variable == value_time,]$id)
         data[data$node == node & 
                data$name == job & 
                data$reduces == reduce &
-               data$value_time == value_time,]$id  <- 1:categories
+               data$variable == value_time,]$id  <- 1:categories
       } 
     }
   }
@@ -66,21 +66,35 @@ for (job in jobs) {
   }
 }
 
+times_by_reduces = group_by(data, name, nodes, reduces)
 
-for (job in jobs) {
-  for (node in nodes) {
-    png(paste(plot_dir,"actual_vs_prediction_time_",job,".png", sep=""),height=1000,width=1500)
-    data_job <- data[data$name == job & data$nodes == node,]
-    g <- ggplot(data=data_job, aes(id, value), x = as.factor(nodes)) +
-      geom_point(aes(shape = factor(value_time), colour = factor(value_time)), size = 4) +
-      ggtitle(paste("Actual time vs Prediction time - ", job)) + 
-      facet_grid(reduces ~ nodes) +
-      xlab("Job") + ylab("Time (minutes)") +  scale_shape_manual(values=c(3, 4)) +
-      scale_color_manual(values=c('#d92626','#030363'))
-    print(g)
-    ggsave(paste(plot_dir, "actual_vs_prediction_time_",job,"_",node,".png", sep=""), g)
-    dev.off()
+# Making a more visual graph by creating a new column with default values to reduce
+times_by_reduces['reduce_group'] = 'static'
+for (i in seq(1, nrow(times_by_reduces), by=2)) {
+  if (times_by_reduces$name[i] != 'PiEstimator' && times_by_reduces$name[i] != 'real_experiment'){
+    times_by_reduces$reduce_group[i] = 'technic 1'
+    times_by_reduces$reduce_group[i+1] = 'technic 2'
   }
 }
 
+############ VERSION WITH SEPARETED REDUCES ###############
+pdf(paste0(plot_dir, "prediction_all_different_reduces.pdf"), width = 14)
+ggplot(times_by_reduces, aes(x=as.factor(id), y=value, fill=variable)) +
+  geom_point(aes(shape = factor(variable), colour = factor(variable)), size = 2) +
+  xlab("Job") + ylab("Time (minutes)") +  scale_shape_manual(values=c(1, 4, 1)) +
+  scale_color_manual(values=c('#056105','#ec3e13')) +
+  theme_bw() +
+  ggtitle("Time") +
+  facet_wrap(name ~ nodes ~ reduces)
+dev.off()
 
+############ VERSION WITH REDUCES ALL TOGETHER ###############
+pdf(paste0(plot_dir, "prediction_all.pdf"), width = 12)
+ggplot(times_by_reduces, aes(x=as.factor(id), y=value, fill=variable)) +
+  geom_point(aes(shape = factor(variable), colour = factor(reduce_group)), size = 2) +
+  xlab("Job") + ylab("Time (minutes)") +  scale_shape_manual(values=c(1, 4)) +
+  scale_color_manual(values=c('#056105','#030363', '#ec3e13')) +
+  theme_bw() +
+  ggtitle("Time") +
+  facet_wrap(name ~ nodes)
+dev.off()
