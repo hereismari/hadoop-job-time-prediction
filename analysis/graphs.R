@@ -22,6 +22,7 @@ job_information$name[job_information$name == 'Pi Estimator'] <- 'PiEstimator'
 job_information$name <- as.factor(job_information$name)
 
 # Melting data and organizing job ids for the graph
+data_originial <- data
 data          <- melt(job_information, id = c("id", "name", "reduces", "input_size", "nodes"))
 jobs          <- unique(job_information$name)
 nodes         <- levels(as.factor(job_information$nodes))
@@ -41,6 +42,10 @@ for (node in nodes) {
                data$name == job & 
                data$reduces == reduce &
                data$variable == value_time,]$id  <- 1:categories
+        
+        data_originial[data_originial$node == node & 
+               data_originial$name == job & 
+                 data_originial$reduces == reduce, ]$id  <- 1:categories
       } 
     }
   }
@@ -98,3 +103,15 @@ ggplot(times_by_reduces, aes(x=as.factor(id), y=value, fill=variable)) +
   ggtitle("Time") +
   facet_wrap(name ~ nodes)
 dev.off()
+
+############ TIME VS PREDICTION LINE AND POINTS ###############
+pdf(paste0(plot_dir, "lines_and_points.pdf"), width = 14)
+ggplot(data_originial, aes(x=as.factor(id))) +
+  geom_point(aes(y = prediction_time)) + geom_line(aes(y = time)) +
+  xlab("Job") + ylab("Time (minutes)") +  scale_shape_manual(values=c(1, 4, 1)) +
+  scale_color_manual(values=c('#056105','#ec3e13')) +
+  theme_bw() +
+  ggtitle("Time") +
+  facet_wrap(name ~ nodes ~ reduces)
+dev.off()
+

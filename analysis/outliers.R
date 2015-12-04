@@ -1,6 +1,7 @@
 library(dplyr)
 library(ggplot2)
 library(reshape2)
+
 ################ Functions #####################
 
 calculateCost <- function(time, number_nodes) {
@@ -40,6 +41,9 @@ total_data = read.csv("8_1_executions",
 # Filtrating only succeeded job
 succeeded_data = filter(total_data, status == 'SUCCEEDED')
 
+# Renaming real_experiment -> Image Processing
+succeeded_data[succeeded_data$name == "real_experiment", ]$name <- "Image Processing"
+
 # Grouping data by name, nodes and reduces
 by_reduces = group_by(succeeded_data, name, nodes, reduces)
 
@@ -53,25 +57,34 @@ times_by_reduces <- summarise(by_reduces,
 # Making a more visual graph by creating a new column with default values to reduce
 times_by_reduces['reduce_group'] = 'static'
 for (i in seq(1, nrow(times_by_reduces), by=2)){
-  if (times_by_reduces$name[i] != 'Pi Estimator' && times_by_reduces$name[i] != 'real_experiment'){
+  if (times_by_reduces$name[i] != 'Pi Estimator' && times_by_reduces$name[i] != 'Image Processing'){
     times_by_reduces$reduce_group[i] = 'technic 1'
     times_by_reduces$reduce_group[i+1] = 'technic 2'
-  }
+  } 
 }
 
-# Plot basic graph
-pdf(paste0(plot_out_dir, "times_hadoop_by_cluster.pdf"))
-ggplot(data=times_by_reduces, aes(x=nodes, y=mean_time, colour=as.factor(reduces))) +
-  geom_bar(stat="identity", position = "dodge", width=1) +
-  xlab("Cluster size in nodes") +
-  ylab("Mean time job execution (s)") +
-  theme_bw() +
-  ggtitle("Job execution time with migration, killing, full OI and normal") +
-  facet_wrap(~name) +
-  geom_errorbar(data=times_by_reduces, aes(ymin=mean_time-sd, ymax=mean_time+sd), width=.2, position = position_dodge(width=1)) 
-dev.off()
+# Melting the data by time and cost
+times_by_reduces_melted <- melt(times_by_reduces, id = c("name", "nodes", "reduces", "count", "sd", "reduce_group"))
 
-#Ploting final graph
+# Changing names to a more describable graph
+levels(times_by_reduces_melted$variable) <- c("Mean Time", "Mean Cost")
+
+# Plot basic graph
+# pdf(paste0(plot_out_dir, "times_hadoop_by_cluster.pdf"))
+# ggplot(data=times_by_reduces, aes(x=nodes, y=mean_time, colour=as.factor(reduces))) +
+#   geom_bar(stat="identity", position = "dodge", width=1) +
+#   xlab("Cluster size in nodes") +
+#   ylab("Mean time job execution (s)") +
+#   theme_bw() +
+#   ggtitle("Job execution time with migration, killing, full OI and normal") +
+#   facet_wrap(~name) +
+#   geom_errorbar(data=times_by_reduces, aes(ymin=mean_time-sd, ymax=mean_time+sd), width=.2, position = position_dodge(width=1)) 
+# dev.off()
+
+################################################
+######### CLUSTER, REDUCE, JOB VS TIME #########
+################################################
+
 pdf(paste0(plot_out_dir, "times_hadoop_by_cluster_reduce_grouped.pdf"), width = 10)
 ggplot(data=times_by_reduces, aes(x=as.factor(nodes), y=mean_time, colour=as.factor(reduce_group))) +
   geom_bar(stat="identity", position = "dodge", width=0.8) +
@@ -84,79 +97,17 @@ ggplot(data=times_by_reduces, aes(x=as.factor(nodes), y=mean_time, colour=as.fac
   scale_colour_discrete(name="Reduces\nNumber")
 dev.off()
 
-#################################################
-###### Mean graphs comparing time with cost #####
-#################################################
-
-graph_time <- ggplot(data=times_by_reduces, aes(x=as.factor(nodes), y=mean_time, colour=as.factor(reduce_group))) +
-  geom_bar(stat="identity", position = "dodge", width=0.8) + geom_line() + 
-  xlab("Cluster size in nodes") +
-  ylab("Mean time job execution (s)") +
-  theme_bw() +
-  ggtitle("Time") +
-  facet_wrap(~name) +
-  scale_colour_discrete(name="Reduces\nNumber")
-
-graph_cost <- ggplot(data=times_by_reduces, aes(x=as.factor(nodes), y=mean_cost, colour=as.factor(reduce_group))) +
-  geom_bar(stat="identity", position = "dodge", width=0.8) + geom_line() + 
-  xlab("Cluster size in nodes") +
-  ylab("Mean cost job execution (s)") +
-  theme_bw() +
-  ggtitle("Cost") +
-  facet_wrap(~name) +
-  scale_colour_discrete(name="Reduces\nNumber")
+###############################################
+############### TIME VS COST ##################
+###############################################
 
 pdf(paste0(plot_out_dir, "cost_vs_time.pdf"), width = 10)
-grid.arrange(graph_time, graph_cost, ncol=2)
-dev.off()
-
-###############################################
-######### TIME VS COST VERSION 1 ##############
-###############################################
-
-# Making data more visual
-times_by_reduces$mean_cost <- times_by_reduces$mean_cost * 200
-
-# Melting data
-times_by_reduces_melted <- melt(times_by_reduces, id = c("name", "nodes", "reduces", "count", "sd", "reduce_group"))
-
-pdf(paste0(plot_out_dir, "cost_vs_time_version1.pdf"), width = 10)
 ggplot(times_by_reduces_melted, aes(x=as.factor(nodes), y=value, fill=variable)) +
   geom_bar(stat="identity", position = "dodge", width=0.8) + 
   xlab("Cluster size in nodes") +
-  ylab("Mean time job execution (s)") +
-  theme_bw() +
-  ggtitle("Time") +
-  facet_wrap(~name) + 
-  scale_colour_discrete(name="Reduces\nNumber")
-dev.off()
-
-###############################################
-######### TIME VS COST VERSION 2 ##############
-###############################################
-
-pdf(paste0(plot_out_dir, "cost_vs_time_version2.pdf"), width = 10)
-ggplot(times_by_reduces_melted, aes(x=as.factor(nodes), y=value, colour=as.factor(reduce_group), fill=variable)) +
-  geom_bar(stat="identity", position = "dodge", width=0.8) + 
-  xlab("Cluster size in nodes") +
-  ylab("Mean time job execution (s)") +
-  theme_bw() +
-  ggtitle("Time") +
-  facet_wrap(~name) + 
-  scale_colour_discrete(name="Reduces\nNumber")
-dev.off()
-
-###############################################
-######### TIME VS COST VERSION 3 ##############
-###############################################
-
-pdf(paste0(plot_out_dir, "cost_vs_time_version3.pdf"), width = 10)
-ggplot(times_by_reduces_melted, aes(x=as.factor(nodes), y=value, fill=variable)) +
-  geom_bar(stat="identity", width=0.8) + 
-  xlab("Cluster size in nodes") +
-  ylab("Mean time job execution (s)") +
-  theme_bw() +
-  ggtitle("Time") +
-  facet_wrap(~name) + 
-  scale_colour_discrete(name="Reduces\nNumber")
+  ylab("") +
+  ggtitle("Time and cost of jobs") +
+  facet_grid(variable ~ name, scales="free") + theme_minimal() + 
+  theme(strip.text.y = element_text(angle = 0)) + 
+  scale_fill_manual(values=c("#E69F00", "#56B4E9"), name = "Mean", labels = c("Time", "Cost")) 
 dev.off()
