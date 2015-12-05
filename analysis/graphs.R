@@ -62,8 +62,6 @@ for (i in seq(1, nrow(times_by_reduces), by=2)) {
 ###################################################################################
 ############ TIME VS PREDICTION LINE AND POINTS ###############
 
-times_by_reduces[times_by_reduces$name == "real_experiment",]$name <- "Image Processing"
-
 pdf(paste0(plot_dir, "time_vs_prediction.pdf"), width = 14)
 ggplot(job_information, aes(x = as.factor(prediction_time),
                              y = as.factor(time))) +
@@ -73,4 +71,19 @@ ggplot(job_information, aes(x = as.factor(prediction_time),
   scale_color_manual(values=c('#ec3e13'), guid = F) +
   theme_bw() +
   ggtitle("Time vs Prediction Time")
+dev.off()
+
+# Gettind error information
+job_information$error <- abs(job_information$time - job_information$prediction_time)
+
+# Old graph
+############ VERSION WITH SEPARETED REDUCES ###############
+pdf(paste0(plot_dir, "prediction_all_different_reduces.pdf"), width = 14)
+ggplot(times_by_reduces, aes(x=as.factor(id), y=value, fill=variable)) +
+    geom_point(aes(shape = factor(variable), colour = factor(variable)), size = 2) +
+    xlab("Job") + ylab("Time (minutes)") +  scale_shape_manual(values=c(1, 4, 1)) +
+    scale_color_manual(values=c('#056105','#ec3e13')) +
+    theme_bw() +
+    ggtitle("Comparing all") +
+    facet_wrap(name ~ nodes ~ reduces)
 dev.off()
