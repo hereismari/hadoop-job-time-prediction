@@ -22,7 +22,6 @@ job_information$name[job_information$name == 'Pi Estimator'] <- 'PiEstimator'
 job_information$name <- as.factor(job_information$name)
 
 # Melting data and organizing job ids for the graph
-data_originial <- data
 data          <- melt(job_information, id = c("id", "name", "reduces", "input_size", "nodes"))
 jobs          <- unique(job_information$name)
 nodes         <- levels(as.factor(job_information$nodes))
@@ -42,32 +41,8 @@ for (node in nodes) {
                data$name == job & 
                data$reduces == reduce &
                data$variable == value_time,]$id  <- 1:categories
-        
-        data_originial[data_originial$node == node & 
-               data_originial$name == job & 
-                 data_originial$reduces == reduce, ]$id  <- 1:categories
       } 
     }
-  }
-}
-
-###################################################################################
-## Plotting output graph comparing actual time with prediction time for each job ##
-###################################################################################
-
-for (job in jobs) {
-  for (node in nodes) {
-    png(paste(plot_dir,"actual_vs_prediction_time_",job,".png", sep=""),height=1000,width=1500)
-    data_job <- data[data$name == job & data$nodes == node,]
-    g <- ggplot(data=data_job, aes(id, value), x = as.factor(nodes)) +
-      geom_point(aes(shape = factor(value_time), colour = factor(value_time)), size = 4) +
-      ggtitle(paste("Actual time vs Prediction time - ", job)) + 
-      facet_grid(reduces ~ nodes) +
-      xlab("Job") + ylab("Time (minutes)") +  scale_shape_manual(values=c(3, 4)) +
-      scale_color_manual(values=c('#d92626','#030363'))
-    print(g)
-    ggsave(paste(plot_dir, "actual_vs_prediction_time_",job,"_",node,".png", sep=""), g)
-    dev.off()
   }
 }
 
@@ -82,36 +57,20 @@ for (i in seq(1, nrow(times_by_reduces), by=2)) {
   }
 }
 
-############ VERSION WITH SEPARETED REDUCES ###############
-pdf(paste0(plot_dir, "prediction_all_different_reduces.pdf"), width = 14)
-ggplot(times_by_reduces, aes(x=as.factor(id), y=value, fill=variable)) +
-  geom_point(aes(shape = factor(variable), colour = factor(variable)), size = 2) +
-  xlab("Job") + ylab("Time (minutes)") +  scale_shape_manual(values=c(1, 4, 1)) +
-  scale_color_manual(values=c('#056105','#ec3e13')) +
-  theme_bw() +
-  ggtitle("Time") +
-  facet_wrap(name ~ nodes ~ reduces)
-dev.off()
-
-############ VERSION WITH REDUCES ALL TOGETHER ###############
-pdf(paste0(plot_dir, "prediction_all.pdf"), width = 12)
-ggplot(times_by_reduces, aes(x=as.factor(id), y=value, fill=variable)) +
-  geom_point(aes(shape = factor(variable), colour = factor(reduce_group)), size = 2) +
-  xlab("Job") + ylab("Time (minutes)") +  scale_shape_manual(values=c(1, 4)) +
-  scale_color_manual(values=c('#056105','#030363', '#ec3e13')) +
-  theme_bw() +
-  ggtitle("Time") +
-  facet_wrap(name ~ nodes)
-dev.off()
-
+###################################################################################
+######## Plotting output graph comparing actual time with prediction time #########
+###################################################################################
 ############ TIME VS PREDICTION LINE AND POINTS ###############
-pdf(paste0(plot_dir, "lines_and_points.pdf"), width = 14)
-ggplot(data_originial, aes(x=as.factor(id))) +
-  geom_point(aes(y = prediction_time)) + geom_line(aes(y = time)) +
-  xlab("Job") + ylab("Time (minutes)") +  scale_shape_manual(values=c(1, 4, 1)) +
-  scale_color_manual(values=c('#056105','#ec3e13')) +
-  theme_bw() +
-  ggtitle("Time") +
-  facet_wrap(name ~ nodes ~ reduces)
-dev.off()
 
+times_by_reduces[times_by_reduces$name == "real_experiment",]$name <- "Image Processing"
+
+pdf(paste0(plot_dir, "lines_and_points.pdf"), width = 14)
+ggplot(job_information, aes(x = as.factor(prediction_time),
+                             y = as.factor(time))) +
+  geom_point(aes(shape = c("Executions"), colour = c("Execution")), size = 2) +
+  geom_abline() + 
+  xlab("Prediction Time (minutes)") + ylab("Time (minutes)") +  scale_shape_manual(values=c(4), guide = F) +
+  scale_color_manual(values=c('#ec3e13'), guid = F) +
+  theme_bw() +
+  ggtitle("Time vs Prediction Time")
+dev.off()
