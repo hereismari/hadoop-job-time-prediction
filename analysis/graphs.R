@@ -64,7 +64,7 @@ for (i in seq(1, nrow(times_by_reduces), by=2)) {
 
 times_by_reduces[times_by_reduces$name == "real_experiment",]$name <- "Image Processing"
 
-pdf(paste0(plot_dir, "lines_and_points.pdf"), width = 14)
+pdf(paste0(plot_dir, "time_vs_prediction.pdf"), width = 14)
 ggplot(job_information, aes(x = as.factor(prediction_time),
                              y = as.factor(time))) +
   geom_point(aes(shape = c("Executions"), colour = c("Execution")), size = 2) +
