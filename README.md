@@ -85,4 +85,13 @@ If you have any doubts about topics 2 and 3 you can have more information about 
   If you used runExperimentIndividually.py you must concatenate all files in one, you can do that by:
   ``` $ cat <output_1_node> <output_2_nodes> <output_3_nodes> ... > output_exp ```
   
-  Then, put the path to the file generated in the R script, and done!
+  ATENTION: before run scripts change the input_file and output_file names.
+  Also check if files are in the same folder or change path in the beggining of the script with the command:
+  ``` setwd("your_path") ```
+  
+  Then, go to *analysis* folder and do the following:
+  1. Execute filtrate.R. It will generate a new file named as output_name.
+  2. Run KNN.R in the file previously generated, and it will generate a new file.
+  3. Run outliers.R and graphs.R with the input = KNN.R output. They will generate graphs in pdf format.
+    
+  And now you have some awesome graphs :sunglasses: !!!
