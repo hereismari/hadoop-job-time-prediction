@@ -87,3 +87,24 @@ ggplot(times_by_reduces, aes(x=as.factor(id), y=value, fill=variable)) +
     ggtitle("Comparing all") +
     facet_wrap(name ~ nodes ~ reduces)
 dev.off()
+
+###############################################
+############### MEAN PREDICTION ERROR #########
+###############################################
+
+actual_time            <- job_information[,"time"]
+prediction_time        <- job_information[,"prediction_time"]
+job_information$error  <- abs((actual_time-prediction_time)/actual_time * 100)
+result                 <- aggregate(job_information$error, 
+                                    by=list(job_information$name), 
+                                    FUN=mean, 
+                                    na.rm=TRUE)
+
+result$error <- round(result$error, 2)
+names(result) <- c("category", "error")
+
+pdf(paste0(plot_out_dir, "mean_error.pdf"), width = 10)
+ggplot(result, aes(x = as.factor(reorder(category,-error)), y = as.factor(error))) + geom_bar(stat = "identity") + 
+  ggtitle("Mean absolute prediction percentage error") + 
+  xlab("") + ylab("Percentage error") + theme_classic()
+dev.off()

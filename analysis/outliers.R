@@ -38,12 +38,6 @@ total_data = read.csv("8_1_executions",
 ###### General graph with time #############################
 ############################################################
 
-# Filtrating only succeeded job
-succeeded_data = filter(total_data, status == 'SUCCEEDED')
-
-# Renaming real_experiment -> Image Processing
-succeeded_data[succeeded_data$name == "real_experiment", ]$name <- "Image Processing"
-
 # Grouping data by name, nodes and reduces
 by_reduces = group_by(succeeded_data, name, nodes, reduces)
 
