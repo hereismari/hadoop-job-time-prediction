@@ -28,9 +28,9 @@ calculateCost <- function(time, number_nodes) {
 # Getting the data
 setwd("~/Dropbox/hadoop-job-time-prediction")
 plot_out_dir = "plots/"
-total_data = read.csv("8_1_executions", 
+total_data = read.csv("8_1_final", 
                        header=FALSE, 
-                       col.names = c("name", "reduces", "input_size", "nodes", "time", "status"), 
+                       col.names = c("name", "reduces", "input_size", "nodes", "time", "id", "prediction_time"), 
                        sep = ";",
                        stringsAsFactors=FALSE)
 
@@ -39,13 +39,13 @@ total_data = read.csv("8_1_executions",
 ############################################################
 
 # Grouping data by name, nodes and reduces
-by_reduces = group_by(succeeded_data, name, nodes, reduces)
+by_reduces = group_by(total_data, name, nodes, reduces)
 
 # New Data frame contains the mean_time of the time and it's sd
 times_by_reduces <- summarise(by_reduces,
                               count = n(),
                               mean_time = mean(time, na.rm = TRUE),
-                              mean_cost = calculateCost(mean(time, na.rm = T), mean(nodes, na.rm = T)),
+                              mean_cost = calculateCost(mean(time, na.rm = T)/60, mean(nodes, na.rm = T)),
                               sd = sd(time, na.rm = TRUE))
 
 # Making a more visual graph by creating a new column with default values to reduce
@@ -95,7 +95,7 @@ dev.off()
 ############### TIME VS COST ##################
 ###############################################
 
-pdf(paste0(plot_out_dir, "cost_vs_time.pdf"), width = 10)
+pdf(paste0(plot_out_dir, "seconds_cost_vs_time.pdf"), width = 10)
 ggplot(times_by_reduces_melted, aes(x=as.factor(nodes), y=value, fill=variable)) +
   geom_bar(stat="identity", position = "dodge", width=0.8) + 
   xlab("Cluster size in nodes") +

@@ -60,11 +60,14 @@ for (i in seq(1, nrow(times_by_reduces), by=2)) {
 ###################################################################################
 ######## Plotting output graph comparing actual time with prediction time #########
 ###################################################################################
-############ TIME VS PREDICTION LINE AND POINTS ###############
+############ TIME VS PREDICTION LINE AND POINTS MINUTES ###############
 
-pdf(paste0(plot_dir, "time_vs_prediction.pdf"), width = 14)
-ggplot(job_information, aes(x = as.factor(prediction_time),
-                             y = as.factor(time))) +
+job_information$minute_time <- round(job_information$time/60)
+job_information$minute_prediction <- round(job_information$prediction_time/60)
+
+pdf(paste0(plot_dir, "minute_time_vs_prediction.pdf"), width = 14)
+ggplot(job_information, aes(x = as.factor(minute_prediction),
+                             y = as.factor(minute_time))) +
   geom_point(aes(shape = c("Executions"), colour = c("Execution")), size = 2) +
   geom_abline() + 
   xlab("Prediction Time (minutes)") + ylab("Time (minutes)") +  scale_shape_manual(values=c(4), guide = F) +
@@ -73,15 +76,28 @@ ggplot(job_information, aes(x = as.factor(prediction_time),
   ggtitle("Time vs Prediction Time")
 dev.off()
 
-# Gettind error information
-job_information$error <- abs(job_information$time - job_information$prediction_time)
+###################################################################################
+######## Plotting output graph comparing actual time with prediction time #########
+###################################################################################
+############ TIME VS PREDICTION LINE AND POINTS SECONDS ###############
+
+pdf(paste0(plot_dir, "second_time_vs_prediction.pdf"), width = 14)
+ggplot(job_information, aes(x = prediction_time,
+                            y = time)) +
+  geom_point(aes(shape = c("Executions"), colour = c("Execution")), size = 2) +
+  geom_abline() + 
+  xlab("Prediction Time (seconds)") + ylab("Time (seconds)") +  scale_shape_manual(values=c(4), guide = F) +
+  scale_color_manual(values=c('#ec3e13'), guid = F) +
+  theme_bw() +
+  ggtitle("Time vs Prediction Time")
+dev.off()
 
 # Old graph
 ############ VERSION WITH SEPARETED REDUCES ###############
-pdf(paste0(plot_dir, "prediction_all_different_reduces.pdf"), width = 14)
+pdf(paste0(plot_dir, "second_prediction_all_different_reduces.pdf"), width = 14)
 ggplot(times_by_reduces, aes(x=as.factor(id), y=value, fill=variable)) +
     geom_point(aes(shape = factor(variable), colour = factor(variable)), size = 2) +
-    xlab("Job") + ylab("Time (minutes)") +  scale_shape_manual(values=c(1, 4, 1)) +
+    xlab("Job") + ylab("Time (seconds)") +  scale_shape_manual(values=c(1, 4, 1)) +
     scale_color_manual(values=c('#056105','#ec3e13')) +
     theme_bw() +
     ggtitle("Comparing all") +
@@ -103,7 +119,7 @@ result                 <- aggregate(job_information$error,
 result$error <- round(result$error, 2)
 names(result) <- c("category", "error")
 
-pdf(paste0(plot_out_dir, "mean_error.pdf"), width = 10)
+pdf(paste0(plot_out_dir, "second_mean_error.pdf"), width = 10)
 ggplot(result, aes(x = as.factor(reorder(category,-error)), y = as.factor(error))) + geom_bar(stat = "identity") + 
   ggtitle("Mean absolute prediction percentage error") + 
   xlab("") + ylab("Percentage error") + theme_classic()
