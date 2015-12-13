@@ -30,7 +30,7 @@ setwd("~/Dropbox/hadoop-job-time-prediction")
 plot_out_dir = "plots/"
 total_data = read.csv("8_1_final", 
                        header=FALSE, 
-                       col.names = c("name", "reduces", "input_size", "nodes", "time", "id", "prediction_time"), 
+                       col.names = c("name", "reduces", "input_size", "nodes", "time", "id", "time_prediction"), 
                        sep = ";",
                        stringsAsFactors=FALSE)
 
@@ -41,27 +41,46 @@ total_data = read.csv("8_1_final",
 # Grouping data by name, nodes and reduces
 by_reduces = group_by(total_data, name, nodes, reduces)
 
-# New Data frame contains the mean_time of the time and it's sd
+# New Data frame contains the mean of the time, mean cost and it's sd
 times_by_reduces <- summarise(by_reduces,
                               count = n(),
                               mean_time = mean(time, na.rm = TRUE),
                               mean_cost = calculateCost(mean(time, na.rm = T)/60, mean(nodes, na.rm = T)),
                               sd = sd(time, na.rm = TRUE))
 
+# New Data frame contains the mean of the prediction, mean cost and it's sd
+prediction_by_reduces <- summarise(by_reduces,
+                              count = n(),
+                              mean_prediction = mean(time_prediction, na.rm = TRUE),
+                              mean_cost = calculateCost(mean(time_prediction, na.rm = T)/60, mean(nodes, na.rm = T)),
+                              sd = sd(time, na.rm = TRUE))
+
+
 # Making a more visual graph by creating a new column with default values to reduce
-times_by_reduces['reduce_group'] = 'static'
+times_by_reduces['reduce_group'] = 'estático'
 for (i in seq(1, nrow(times_by_reduces), by=2)){
   if (times_by_reduces$name[i] != 'Pi Estimator' && times_by_reduces$name[i] != 'Image Processing'){
-    times_by_reduces$reduce_group[i] = 'technic 1'
-    times_by_reduces$reduce_group[i+1] = 'technic 2'
+    times_by_reduces$reduce_group[i] = 'técnica 1'
+    times_by_reduces$reduce_group[i+1] = 'técnica 2'
   } 
 }
 
+prediction_by_reduces['reduce_group'] = 'estático'
+for (i in seq(1, nrow(prediction_by_reduces), by=2)){
+  if (prediction_by_reduces$name[i] != 'Pi Estimator' && prediction_by_reduces$name[i] != 'Image Processing'){
+    prediction_by_reduces$reduce_group[i] = 'técnica 1'
+    prediction_by_reduces$reduce_group[i+1] = 'técnica 2'
+  } 
+}
+
+
 # Melting the data by time and cost
 times_by_reduces_melted <- melt(times_by_reduces, id = c("name", "nodes", "reduces", "count", "sd", "reduce_group"))
+prediction_by_reduces_melted <- melt(prediction_by_reduces, id = c("name", "nodes", "reduces", "count", "sd", "reduce_group"))
 
 # Changing names to a more describable graph
-levels(times_by_reduces_melted$variable) <- c("Mean Time", "Mean Cost")
+levels(times_by_reduces_melted$variable) <- c("Tempo médio", "Custo médio")
+levels(prediction_by_reduces_melted$variable) <- c("Tempo médio", "Custo médio")
 
 # Plot basic graph
 # pdf(paste0(plot_out_dir, "times_hadoop_by_cluster.pdf"))
@@ -82,13 +101,37 @@ levels(times_by_reduces_melted$variable) <- c("Mean Time", "Mean Cost")
 pdf(paste0(plot_out_dir, "times_hadoop_by_cluster_reduce_grouped.pdf"), width = 10)
 ggplot(data=times_by_reduces, aes(x=as.factor(nodes), y=mean_time, colour=as.factor(reduce_group))) +
   geom_bar(stat="identity", position = "dodge", width=0.8) +
-  xlab("Cluster size in nodes") +
-  ylab("Mean time job execution (s)") +
+  xlab("\nNúmero de nós\n") +
+  ylab("\nTempo médio da execução\nde uma tarefa (segundos)\n") +
   theme_bw() +
-  ggtitle("Job execution time depending on job type, cluster size and reduces number") +
   facet_wrap(~name) +
   geom_errorbar(data=times_by_reduces, aes(ymin=mean_time-sd, ymax=mean_time+sd), width=.3, position = position_dodge(width=.8)) +
-  scale_colour_discrete(name="Reduces\nNumber")
+  scale_colour_discrete(name="\nNúmero de reduces\n") +
+  theme(axis.text=element_text(size=14),
+        axis.title=element_text(size=18, face = "bold"), 
+        legend.title=element_text(size=18, face = "bold"), 
+        legend.text=element_text(size=14),
+        strip.text=element_text(size=14))
+dev.off()
+
+################################################
+######### CLUSTER, REDUCE, JOB VS PREDICTION #########
+################################################
+
+pdf(paste0(plot_out_dir, "prediction_hadoop_by_cluster_reduce_grouped.pdf"), width = 10)
+ggplot(data=prediction_by_reduces, aes(x=as.factor(nodes), y=mean_prediction, colour=as.factor(reduce_group))) +
+  geom_bar(stat="identity", position = "dodge", width=0.8) +
+  xlab("\nNúmero de nós\n") +
+  ylab("\nTempo médio da execução\nde uma tarefa (segundos)\n") +
+  theme_bw() +
+  facet_wrap(~name) +
+  geom_errorbar(data=prediction_by_reduces, aes(ymin=mean_prediction-sd, ymax=mean_prediction+sd), width=.3, position = position_dodge(width=.8)) +
+  scale_colour_discrete(name="\nNúmero de reduces\n") +
+  theme(axis.text=element_text(size=14),
+        axis.title=element_text(size=18, face = "bold"), 
+        legend.title=element_text(size=18, face = "bold"), 
+        legend.text=element_text(size=14),
+        strip.text=element_text(size=14))
 dev.off()
 
 ###############################################
@@ -98,10 +141,33 @@ dev.off()
 pdf(paste0(plot_out_dir, "seconds_cost_vs_time.pdf"), width = 10)
 ggplot(times_by_reduces_melted, aes(x=as.factor(nodes), y=value, fill=variable)) +
   geom_bar(stat="identity", position = "dodge", width=0.8) + 
-  xlab("Cluster size in nodes") +
+  xlab("\nNúmero de nós\n") +
   ylab("") +
-  ggtitle("Time and cost of jobs") +
   facet_grid(variable ~ name, scales="free") + theme_minimal() + 
   theme(strip.text.y = element_text(angle = 0)) + 
-  scale_fill_manual(values=c("#E69F00", "#56B4E9"), name = "Mean", labels = c("Time", "Cost")) 
+  scale_fill_manual(values=c("#E69F00", "#56B4E9"), name = "Média", labels = c("Tempo", "Custo")) +
+  theme(axis.text=element_text(size=14),
+        axis.title=element_text(size=18, face = "bold"), 
+        legend.title=element_text(size=18, face = "bold"), 
+        legend.text=element_text(size=14),
+        strip.text=element_text(size=14)) 
+dev.off()
+
+###############################################
+########## PREDICTION VS COST #################
+###############################################
+
+pdf(paste0(plot_out_dir, "prediction_seconds_cost_vs_time.pdf"), width = 10)
+ggplot(prediction_by_reduces_melted, aes(x=as.factor(nodes), y=value, fill=variable)) +
+  geom_bar(stat="identity", position = "dodge", width=0.8) + 
+  xlab("\nNúmero de nós\n") +
+  ylab("") +
+  facet_grid(variable ~ name, scales="free") + theme_minimal() + 
+  theme(strip.text.y = element_text(angle = 0)) + 
+  scale_fill_manual(values=c("#E69F00", "#56B4E9"), name = "Média", labels = c("Tempo", "Custo")) +
+  theme(axis.text=element_text(size=14),
+        axis.title=element_text(size=18, face = "bold"), 
+        legend.title=element_text(size=18, face = "bold"), 
+        legend.text=element_text(size=14),
+        strip.text=element_text(size=14)) 
 dev.off()

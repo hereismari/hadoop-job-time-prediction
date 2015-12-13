@@ -16,11 +16,6 @@ job_information <- read.csv(file_name,
 # Setting up global value_times
 input_sizes   <- unique(job_information$input_size)
 
-# Changing "Pi Estimator" to "PiEstimator"
-job_information$name <- as.character(job_information$name)
-job_information$name[job_information$name == 'Pi Estimator'] <- 'PiEstimator'
-job_information$name <- as.factor(job_information$name)
-
 # Melting data and organizing job ids for the graph
 data          <- melt(job_information, id = c("id", "name", "reduces", "input_size", "nodes"))
 jobs          <- unique(job_information$name)
@@ -65,15 +60,23 @@ for (i in seq(1, nrow(times_by_reduces), by=2)) {
 job_information$minute_time <- round(job_information$time/60)
 job_information$minute_prediction <- round(job_information$prediction_time/60)
 
+maxlim_minutes <- max(c(max(job_information$minute_prediction), max(job_information$minute_time)))
+
 pdf(paste0(plot_dir, "minute_time_vs_prediction.pdf"), width = 14)
-ggplot(job_information, aes(x = as.factor(minute_prediction),
-                             y = as.factor(minute_time))) +
-  geom_point(aes(shape = c("Executions"), colour = c("Execution")), size = 2) +
+ggplot(job_information, aes(x = minute_prediction,
+                             y = minute_time)) +
+  geom_point(aes(shape = c("Executions"), colour = factor(name)), size = 4) +
+  scale_x_continuous(limits=c(0,maxlim_minutes), breaks=0:maxlim_minutes) + 
+  scale_y_continuous(limits=c(0,maxlim_minutes), breaks=0:maxlim_minutes) +
   geom_abline() + 
-  xlab("Prediction Time (minutes)") + ylab("Time (minutes)") +  scale_shape_manual(values=c(4), guide = F) +
-  scale_color_manual(values=c('#ec3e13'), guid = F) +
+  xlab("Tempo previsto\n (minutos)\n") + ylab("Tempo real\n(minutos)\n") +  
+  scale_shape_manual(values=c(4), guide = F) +
   theme_bw() +
-  ggtitle("Time vs Prediction Time")
+  scale_colour_discrete(name="Nome da tarefa") +
+  theme(axis.text=element_text(size=14),
+        axis.title=element_text(size=18, face = "bold"), 
+        legend.title=element_text(size=18, face = "bold"), 
+        legend.text=element_text(size=14))
 dev.off()
 
 ###################################################################################
@@ -81,27 +84,40 @@ dev.off()
 ###################################################################################
 ############ TIME VS PREDICTION LINE AND POINTS SECONDS ###############
 
-pdf(paste0(plot_dir, "second_time_vs_prediction.pdf"), width = 14)
-ggplot(job_information, aes(x = prediction_time,
-                            y = time)) +
-  geom_point(aes(shape = c("Executions"), colour = c("Execution")), size = 2) +
-  geom_abline() + 
-  xlab("Prediction Time (seconds)") + ylab("Time (seconds)") +  scale_shape_manual(values=c(4), guide = F) +
-  scale_color_manual(values=c('#ec3e13'), guid = F) +
-  theme_bw() +
-  ggtitle("Time vs Prediction Time")
-dev.off()
+maxlim_seconds <- max(c(max(job_information$prediction_time), max(job_information$time)))
+
+  pdf(paste0(plot_dir, "second_time_vs_prediction.pdf"), width = 14)
+  ggplot(job_information, aes(x = prediction_time,
+                              y = time)) +
+    geom_point(aes(shape = c("Executions"), colour = factor(name)), size = 4) +
+    scale_x_continuous(limits=c(0,maxlim_seconds), breaks=round(seq(0, maxlim_seconds, 100))) + 
+    scale_y_continuous(limits=c(0,maxlim_seconds), breaks=round(seq(0, maxlim_seconds, 100))) +
+    geom_abline() + 
+    xlab("\nTempo previsto\n (minutos)\n") + ylab("\nTempo real\n(minutos)\n") +  
+    scale_shape_manual(values=c(4), guide = F) +
+    theme_bw() +
+    scale_colour_discrete(name="Nome da tarefa") +
+    theme(axis.text=element_text(size=14),
+          axis.title=element_text(size=18, face = "bold"), 
+          legend.title=element_text(size=18, face = "bold"), 
+          legend.text=element_text(size=14))
+  dev.off()
 
 # Old graph
 ############ VERSION WITH SEPARETED REDUCES ###############
+  
 pdf(paste0(plot_dir, "second_prediction_all_different_reduces.pdf"), width = 14)
-ggplot(times_by_reduces, aes(x=as.factor(id), y=value, fill=variable)) +
+ggplot(times_by_reduces, aes(x=as.factor(id), y=value, fill=variable), guide = F) +
     geom_point(aes(shape = factor(variable), colour = factor(variable)), size = 2) +
-    xlab("Job") + ylab("Time (seconds)") +  scale_shape_manual(values=c(1, 4, 1)) +
-    scale_color_manual(values=c('#056105','#ec3e13')) +
-    theme_bw() +
-    ggtitle("Comparing all") +
-    facet_wrap(name ~ nodes ~ reduces)
+    xlab("Execuções") + ylab("\nTempo (segundos)\n") +  
+    scale_shape_manual(values=c(1, 4, 1), name="Variáveis", labels=c("tempo real", "previsão")) +
+    scale_color_manual(values=c('#056105','#ec3e13'), guide=F) +
+    theme_bw() + guides(fill = F) + 
+    facet_wrap(name ~ nodes ~ reduces) +
+  theme(axis.text=element_text(size=14),
+        axis.title=element_text(size=18, face = "bold"), 
+        legend.title=element_text(size=18, face = "bold"), 
+        legend.text=element_text(size=14))
 dev.off()
 
 ###############################################
@@ -120,7 +136,11 @@ result$error <- round(result$error, 2)
 names(result) <- c("category", "error")
 
 pdf(paste0(plot_out_dir, "second_mean_error.pdf"), width = 10)
-ggplot(result, aes(x = as.factor(reorder(category,-error)), y = as.factor(error))) + geom_bar(stat = "identity") + 
-  ggtitle("Mean absolute prediction percentage error") + 
-  xlab("") + ylab("Percentage error") + theme_classic()
+ggplot(result, aes(x = as.factor(reorder(category,-error)), y = as.factor(error))) + 
+  geom_bar(stat = "identity") + 
+  xlab("") + ylab("\nErro médio (porcentagem)\n") + theme_classic() +
+  theme(axis.text=element_text(size=14),
+        axis.title=element_text(size=18, face = "bold"), 
+        legend.title=element_text(size=18, face = "bold"), 
+        legend.text=element_text(size=14))
 dev.off()
