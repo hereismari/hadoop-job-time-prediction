@@ -92,6 +92,6 @@ If you have any doubts about topics 2 and 3 you can have more information about 
   Then, go to *analysis* folder and do the following:
   1. Execute filtrate.R. It will generate a new file named as output_name.
   2. Run KNN.R in the file previously generated, and it will generate a new file.
-  3. Run graph_cost.R and graph_prediction.R with the input = KNN.R output. They will generate graphs in pdf format.
+  3. Run graphs_cost.R and graphs_prediction.R with the input = KNN.R output. They will generate graphs in pdf format.
     
   And now you have some awesome graphs :sunglasses: !!!
