@@ -1,10 +1,10 @@
 library(class)
 
-setwd("~/Dropbox/hadoop-job-time-prediction")
+setwd("~/Dropbox/hadoop-job-time-prediction/outputs")
 
 # Getting the data
-file_name <- "8_1_executions"
-output_name <- "8_1_executions_filtrated"
+file_name <- "final_file_16_executions"
+output_name <- "final_file_16_executions_filtrated"
 job_information <- read.csv(file_name, 
                              header=F, 
                              col.names = c("name", "reduces", "input_size", "nodes", "time", "status"), 

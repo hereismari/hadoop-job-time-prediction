@@ -4,9 +4,9 @@ library(ggplot2)
 library(dplyr)
 
 # Reading file with the job informations
-file_name <- "8_1_final"
+file_name <- "final_file_knn"
 plot_dir = "plots/"
-setwd("~/Dropbox/hadoop-job-time-prediction")
+setwd("~/Dropbox/hadoop-job-time-prediction/outputs")
 
 job_information <- read.csv(file_name, 
                             header = F,
@@ -44,11 +44,11 @@ for (node in nodes) {
 times_by_reduces = group_by(data, name, nodes, reduces)
 
 # Making a more visual graph by creating a new column with default values to reduce
-times_by_reduces['reduce_group'] = 'static'
+times_by_reduces['reduce_group'] = 'não se aplica'
 for (i in seq(1, nrow(times_by_reduces), by=2)) {
   if (times_by_reduces$name[i] != 'PiEstimator' && times_by_reduces$name[i] != 'real_experiment'){
-    times_by_reduces$reduce_group[i] = 'technic 1'
-    times_by_reduces$reduce_group[i+1] = 'technic 2'
+    times_by_reduces$reduce_group[i] = 'técnica 1'
+    times_by_reduces$reduce_group[i+1] = 'técnica 2'
   }
 }
 
@@ -87,22 +87,47 @@ dev.off()
 maxlim_seconds <- max(c(max(job_information$prediction_time), max(job_information$time)))
 
   pdf(paste0(plot_dir, "second_time_vs_prediction.pdf"), width = 14)
-  ggplot(job_information, aes(x = prediction_time,
-                              y = time)) +
-    geom_point(aes(shape = c("Executions"), colour = factor(name)), size = 4) +
-    scale_x_continuous(limits=c(0,maxlim_seconds), breaks=round(seq(0, maxlim_seconds, 100))) + 
-    scale_y_continuous(limits=c(0,maxlim_seconds), breaks=round(seq(0, maxlim_seconds, 100))) +
+  ggplot(job_information, aes(x = prediction_time, y = time)) +
+    geom_point(size = 4, aes(colour = name, shape = name)) +
+    scale_x_continuous(limits=c(0,maxlim_seconds), breaks=round(seq(0, maxlim_seconds, 200))) + 
+    scale_y_continuous(limits=c(0,maxlim_seconds), breaks=round(seq(0, maxlim_seconds, 200))) +
     geom_abline() + 
-    xlab("\nTempo previsto\n (minutos)\n") + ylab("\nTempo real\n(minutos)\n") +  
-    scale_shape_manual(values=c(4), guide = F) +
+    xlab("\nTempo previsto\n (segundos)\n") + ylab("\nTempo real\n(segundos)\n") +  
+    scale_colour_manual(name="Nome da tarefa", 
+                        values= c("#63b8ff", "#5a0441", "#074a36", "#ec4d45")) +
+    scale_shape_manual(name = "Nome da tarefa", 
+                       values=c(4,2,3,1)) +
     theme_bw() +
-    scale_colour_discrete(name="Nome da tarefa") +
     theme(axis.text=element_text(size=14),
           axis.title=element_text(size=18, face = "bold"), 
           legend.title=element_text(size=18, face = "bold"), 
-          legend.text=element_text(size=14))
+          legend.text=element_text(size=14)) 
   dev.off()
 
+###################################################################################
+######## Plotting output graph comparing actual time with prediction time #########
+###################################################################################
+############ TIME VS PREDICTION LINE AND POINTS SECONDS ###############
+
+pdf(paste0(plot_dir, "second_time_vs_prediction_2.pdf"), width = 14)
+ggplot(job_information, aes(x = prediction_time, y = time)) +
+  geom_point(size = 4, aes(colour = name, shape = name)) +
+  scale_x_continuous(limits=c(0,maxlim_seconds), breaks=round(seq(0, maxlim_seconds, 200))) + 
+  scale_y_continuous(limits=c(0,maxlim_seconds), breaks=round(seq(0, maxlim_seconds, 200))) +
+  geom_abline() + 
+  xlab("\nTempo previsto\n (segundos)\n") + ylab("\nTempo real\n(segundos)\n") +  
+  scale_colour_manual(name="Nome da tarefa", 
+                      values= c("#63b8ff", "#5a0441", "#074a36", "#ec4d45")) +
+  scale_shape_manual(name = "Nome da tarefa", 
+                     values=c(4,2,3,1)) +
+  theme_bw() +
+  theme(axis.text=element_text(size=14),
+        axis.title=element_text(size=18, face = "bold"), 
+        legend.title=element_text(size=18, face = "bold"), 
+        legend.text=element_text(size=14)) +
+  facet_wrap(~name)
+dev.off()
+  
 # Old graph
 ############ VERSION WITH SEPARETED REDUCES ###############
   

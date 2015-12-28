@@ -1,7 +1,7 @@
 library(class)
 
-file_name <- "8_1_executions_filtrated"
-output_name <- "8_1_final"
+file_name <- "final_file_16_executions_filtrated"
+output_name <- "final_file_knn"
 
 # Reading file with the jobs filtrared informations from filtrared_job_information_file
 job_information <- read.csv(file_name, 

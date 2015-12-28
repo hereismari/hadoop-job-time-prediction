@@ -9,7 +9,6 @@ calculateCost <- function(time, number_nodes) {
   ########### Calculating cost for execution time ###########
   # Google pricing: https://cloud.google.com/compute/pricing
   # $0.03492 / VCPUs per hour + $0.00468 / GB Memory per hour
-  # Hora = 0.05 | Minuto = 0.00084
   
   vcpu_hour <- 0.03492
   memory_hour <- 0.00468
@@ -22,13 +21,13 @@ calculateCost <- function(time, number_nodes) {
   cost_per_hour <- number_of_vcpu*vcpu_hour + memory_used*memory_hour
   cost_per_minute <- number_of_vcpu*vcpu_minute + memory_used*memory_minute
   
-  return ((cost_per_minute * time) * number_nodes)
+  return ((cost_per_minute * time) * (number_nodes + 1))
 }
 
 # Getting the data
-setwd("~/Dropbox/hadoop-job-time-prediction")
+setwd("~/Dropbox/hadoop-job-time-prediction/outputs")
 plot_out_dir = "plots/"
-total_data = read.csv("8_1_final", 
+total_data = read.csv("final_file_knn", 
                        header=FALSE, 
                        col.names = c("name", "reduces", "input_size", "nodes", "time", "id", "time_prediction"), 
                        sep = ";",
@@ -45,7 +44,7 @@ by_reduces = group_by(total_data, name, nodes, reduces)
 times_by_reduces <- summarise(by_reduces,
                               count = n(),
                               mean_time = mean(time, na.rm = TRUE),
-                              mean_cost = calculateCost(mean(time, na.rm = T)/60, mean(nodes, na.rm = T)),
+                              mean_cost = calculateCost(ceiling(mean(time, na.rm = T)/60), mean(nodes, na.rm = T)),
                               sd = sd(time, na.rm = TRUE))
 
 # New Data frame contains the mean of the prediction, mean cost and it's sd
@@ -55,9 +54,8 @@ prediction_by_reduces <- summarise(by_reduces,
                               mean_cost = calculateCost(mean(time_prediction, na.rm = T)/60, mean(nodes, na.rm = T)),
                               sd = sd(time, na.rm = TRUE))
 
-
 # Making a more visual graph by creating a new column with default values to reduce
-times_by_reduces['reduce_group'] = 'estático'
+times_by_reduces['reduce_group'] = 'não se aplica'
 for (i in seq(1, nrow(times_by_reduces), by=2)){
   if (times_by_reduces$name[i] != 'Pi Estimator' && times_by_reduces$name[i] != 'Image Processing'){
     times_by_reduces$reduce_group[i] = 'técnica 1'
@@ -65,7 +63,7 @@ for (i in seq(1, nrow(times_by_reduces), by=2)){
   } 
 }
 
-prediction_by_reduces['reduce_group'] = 'estático'
+prediction_by_reduces['reduce_group'] = 'não se aplica'
 for (i in seq(1, nrow(prediction_by_reduces), by=2)){
   if (prediction_by_reduces$name[i] != 'Pi Estimator' && prediction_by_reduces$name[i] != 'Image Processing'){
     prediction_by_reduces$reduce_group[i] = 'técnica 1'
@@ -73,6 +71,13 @@ for (i in seq(1, nrow(prediction_by_reduces), by=2)){
   } 
 }
 
+by_reduces['reduce_group'] = 'não se aplica'
+for (i in seq(1, nrow(by_reduces), by=2)){
+  if (by_reduces$name[i] != 'Pi Estimator' && by_reduces$name[i] != 'Image Processing'){
+    by_reduces$reduce_group[i] = 'técnica 1'
+    by_reduces$reduce_group[i+1] = 'técnica 2'
+  } 
+}
 
 # Melting the data by time and cost
 times_by_reduces_melted <- melt(times_by_reduces, id = c("name", "nodes", "reduces", "count", "sd", "reduce_group"))
@@ -114,9 +119,9 @@ ggplot(data=times_by_reduces, aes(x=as.factor(nodes), y=mean_time, colour=as.fac
         strip.text=element_text(size=14))
 dev.off()
 
-################################################
+######################################################
 ######### CLUSTER, REDUCE, JOB VS PREDICTION #########
-################################################
+######################################################
 
 pdf(paste0(plot_out_dir, "prediction_hadoop_by_cluster_reduce_grouped.pdf"), width = 10)
 ggplot(data=prediction_by_reduces, aes(x=as.factor(nodes), y=mean_prediction, colour=as.factor(reduce_group))) +
@@ -171,3 +176,14 @@ ggplot(prediction_by_reduces_melted, aes(x=as.factor(nodes), y=value, fill=varia
         legend.text=element_text(size=14),
         strip.text=element_text(size=14)) 
 dev.off()
+
+
+###############################################
+########## OUTLIERS ANAYLIS #################
+###############################################
+pdf(paste0(plot_out_dir, "outliers.pdf"), width = 10)
+ggplot(data=by_reduces, aes(x=as.factor(nodes), y=time, colour=as.factor(reduces))) +
+  geom_boxplot() +
+  facet_wrap(~name) 
+dev.off()
+
