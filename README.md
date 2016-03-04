@@ -22,7 +22,7 @@ To run this experiment first you must:
 
 #### 1. Getting the input file
 
-Input file used in the experiment can be accessed at [this link](https://www.dropbox.com/s/1e4zdjq6l8tj7eb/5GB?dl=0). 
+Input file used in the experiment can be accessed at [this link](https://www.dropbox.com/s/dkes6exdrofbi6k/5GB?dl=0). 
 
 This file was generate by TeraSortGen of Hadoop 1.2.1 examples, doing the following command:
 
